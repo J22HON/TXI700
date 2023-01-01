@@ -53,7 +53,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+  
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,6 +69,9 @@
   struct FUNCTION FunData;
   struct KEY Key;
   
+  extern RTC_HandleTypeDef hrtc;
+  extern RTC_DateTypeDef sDate;
+  extern RTC_TimeTypeDef sTime;
   
   DMA_CircularBuffer Uart1Rx, Uart2Rx, Uart3Rx;
   
@@ -76,11 +79,23 @@
                          Time01Start,
                          Time02Start,
                          PowerOn,
-                         v_ad_flag;
+                         v_ad_flag,
+                         v_multi_cal,
+                         v_minimum_division[2];                         
   
   unsigned long         Time01Count,
                          Time02Count,
-                         ShortBeepCount;
+                         ShortBeepCount,
+                         RealTime,
+                         RealDate,
+                         v_maximum_capacity[2],
+                         v_e_resolution[2],
+                         v_adc_org[2][5],
+                         v_zero[2],
+                         imsi_value,
+                         v_temp_long;
+  
+  float	                 v_res_factor[2][5];
   
   unsigned int          v_speed;                  
   
@@ -92,6 +107,7 @@
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -121,6 +137,12 @@ int main(void)
   LCD_DIMMING_OFF; 
   LCD_OFF;
   OLED_Initialize();
+  LOGO_Print(0);
+  mprintf(43,6," TXI-700");
+  mprintf(43,7,"VER T100");
+  HAL_Delay(1500);
+  
+  HAL_RTC_WaitForSynchro(&hrtc);
   
   MX_DMA_Init();
   MX_ADC1_Init();
@@ -153,13 +175,22 @@ int main(void)
     mprintf(1, 3, "          ERR-U3      ");
     Error_Handler();
   }
-  DMA_CB_Init(&Uart3Rx,Uart3Rx.Buf,RXBUFFERSIZE,(unsigned long *)&(huart3.hdmarx->Instance->CNDTR) );
-  
-  PowerOn = 1;
+  DMA_CB_Init(&Uart3Rx,Uart3Rx.Buf,RXBUFFERSIZE,(unsigned long *)&(huart3.hdmarx->Instance->CNDTR) );   
   
   MX_RTC_Init();
   MX_TIM15_Init();
   MX_USB_DEVICE_Init();
+  ShortBeep = 1;
+  PowerOn = 1;
+  FunData.KeyBeep = 1;
+  
+  function_read();
+  function_reset();
+  cal_read();
+  
+  FunData.Filter_Degree = 5;
+  adc_initial();
+  
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -169,7 +200,21 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+    KEYPAD_Scan();
+    if(Key.PressFlg[0])      { Key.PressFlg[0]=0; }
+    else if(Key.PressFlg[1]) { Key.PressFlg[1]=0; }
+    else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; }  
+    else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; }
+    else if(Key.PressFlg[4]) { Key.PressFlg[4]=0; }
+    else if(Key.PressFlg[5]) { Key.PressFlg[5]=0; }
+    else if(Key.PressFlg[6]) { Key.PressFlg[6]=0; loadcell_test();}
+    else if(Key.PressFlg[7]) { Key.PressFlg[7]=0; cal_mode();}
+    else if(Key.PressFlg[8]) { Key.PressFlg[8]=0; rtc_set();}
+    else if(Key.PressFlg[9]) { Key.PressFlg[9]=0; function();}
+    else if(Key.PressFlg[10]) { Key.PressFlg[10]=0; }
+    else if(Key.PressFlg[11]) { Key.PressFlg[11]=0; }
+    else if(Key.PressFlg[12]) { Key.PressFlg[12]=0; }
+    else if(Key.PressFlg[13]) { Key.PressFlg[13]=0; }   
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

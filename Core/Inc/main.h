@@ -267,8 +267,25 @@ typedef struct {
 struct FUNCTION {
     char Filter_Degree;
     char Pad_Sel;
+    char Stable;
+    char Weigh_In_Motion;
+    char Over_Enable;
+    char Print_Form;
+    char Print_Copies;
+    char LineFeed;
+    char Print_Enable;
+    char Data_Format;
+    char Wireless_Output;
+    char Off_Syns;
+    char Auto_Measuring;
+    char Auto_Stable;
+    char Auto_Print;
+    char Pad_Type;
+    char Display_Used;
+    char Print_Density;
     char KeyBeep;
 };
+
 
 // EEP
 void eeprom_4byte_write(unsigned long addr, unsigned long data);
@@ -292,6 +309,13 @@ unsigned char i2c_recv_ack(void);
 unsigned char sda_value(void);
 void i2c_send_byte(unsigned char data);
 unsigned char i2c_recv_byte(void);
+void function(void);
+void title_Function(unsigned char set_num);
+void number_long(unsigned char chat);
+void function_read(void);
+void function_write(void);
+void function_reset(void);
+void cal_write(void);
 
 // DISPLAY
 void Write_Command(unsigned char Command);
@@ -325,9 +349,51 @@ void DMA_CB_PreRead(DMA_CircularBuffer *cb, unsigned char* data, unsigned long c
 // AD
 void chip_select(unsigned char enable, unsigned char ad);
 long read_filtered_adc(unsigned char k);
+void adc_initial(void);
 
+// KEY
+void KEYPAD_Scan(void);
 
+// RTC
+void TimeRead(void);
+void rtc_set(void);
 
+// CAL
+void cal_mode(void);
+void zero_span_set(unsigned char flag); 
+unsigned int  cal_number_long(unsigned int init_value, unsigned char chat);
+
+// TEST
+void loadcell_test(void);
+
+#define FUNCTION01        1
+#define FUNCTION02        2
+#define FUNCTION03        3
+#define FUNCTION04        4
+#define FUNCTION05        5
+#define FUNCTION06        6
+#define FUNCTION07        7
+#define FUNCTION08        8
+#define FUNCTION09        9
+#define FUNCTION10        10
+#define FUNCTION11        11
+#define FUNCTION12        12
+#define FUNCTION13        13
+#define FUNCTION14        14
+#define FUNCTION15        15
+#define FUNCTION16        16
+#define FUNCTION17        17
+#define FUNCTION18        18
+#define FUNCTION19        19
+#define FUNCTION20        20
+
+#define V_RES_FACTOR             100  // 4*5*2
+#define V_ADC_ORG                140  // 4*5*2
+#define V_ZERO                   180  // 4*2
+#define V_MAXIMUM_CAPACITY       188  // 4*2
+#define V_E_RESOLUTION           196  // 4*2
+#define V_MINIMUM_DIVISION       204  // 1*2
+#define V_MULTI_CAL              206  
 
 
 
@@ -342,3 +408,4 @@ void SystemClock_Config(void);
 #endif /* __MAIN_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
