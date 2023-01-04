@@ -1,28 +1,29 @@
 #include "main.h"
 
-extern struct KEY Key;
-extern struct FUNCTION FunData;
+ extern struct KEY Key;
+ extern struct FUNCTION FunData;
 
-unsigned  long  ad_set_buf[2] = { 0,0 };
-unsigned  long  set_weight[8][5] = { {0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0} };
-unsigned  long  back_adc=0;
-unsigned  char  cal_no=0, k=0, pass_flag=0, cal_start=0;
+ unsigned long  ad_set_buf[2] = { 0,0 };
+ unsigned long  set_weight[2][5] = { {0,0,0,0,0},{0,0,0,0,0}};
+ unsigned long  back_adc=0;
+ unsigned char  cal_no=0, k=0, pass_flag=0, cal_start=0;
 
-extern unsigned char     v_ad_flag,
-                         v_multi_cal,
-                         v_minimum_division[2]; 
+ extern unsigned char             v_ad_flag,
+                                   v_multi_cal,
+                                   v_minimum_division[2]; 
 
-extern unsigned long    v_maximum_capacity[2],
-                         v_e_resolution[2],
-                         v_adc_org[2][5],
-                         v_zero[2],
-                         imsi_value,
-                         v_temp_long;
+ extern unsigned long             v_maximum_capacity[2],
+                                   v_e_resolution[2],
+                                   v_adc_org[2][5],
+                                   v_zero[2],
+                                   imsi_value,
+                                   v_temp_long;
+ 
+ extern float	                   v_res_factor[2][5];
 
-extern float	         v_res_factor[2][5];
 void cal_mode(void)
 {
-  static unsigned long temp_long;
+  unsigned long temp_long;
  
 RETRY:
     
@@ -35,6 +36,8 @@ RETRY:
   Print_Str6x8(0xFF,110,7,"1/1");
   HAL_Delay(500);
     
+  cal_no = 0; 
+  k = 0;
   temp_long = v_multi_cal;
   
   while(1)
@@ -112,8 +115,6 @@ RETRY:
     
     mprintf(1, 3, " PAD   :      %d" ,temp_long );
   }  
-
-  adc_initial();
 
   mprintf(1, 4, " CAPA  : "); HAL_Delay(700); 
   
@@ -240,6 +241,7 @@ void zero_span_set(unsigned char flag)  // 0 : zero set, 1: span set
               else     v_temp_float = (float)(ad_set_buf[1] - v_temp_long) * ((float)v_maximum_capacity[cal_no] / (float)(set_weight[cal_no][k]-set_weight[cal_no][k-1]));
 
               v_res_factor[cal_no][k] = (float)(v_e_resolution[cal_no] * 20) / v_temp_float;
+ 
               if(k==0) 
               {
                 v_adc_org[cal_no][k] = (unsigned long) ((float)v_temp_long * v_res_factor[cal_no][0]);
@@ -293,7 +295,8 @@ unsigned int  cal_number_long(unsigned int init_value, unsigned char chat)
         key_set = 0;
                
         if(!chat)               mprintf(1, 4, " CAPA  : %6d     " ,value);
-        else if(chat==1)        mprintf(1, 5, " DIV   :     %2d     " ,value);
+        else if(chat==1)        mprintf(1, 5, " DIV   :     %2d " ,value);
         else if(chat==2)        mprintf(1, 3, " SET-F  : %6d    " ,value);
     }
 }
+

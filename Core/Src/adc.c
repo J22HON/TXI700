@@ -21,6 +21,10 @@
 #include "adc.h"
 
 /* USER CODE BEGIN 0 */
+ extern unsigned char       BatteryLevel,
+                             ShortBeep;
+
+ extern long                BattOffSet;
 
 /* USER CODE END 0 */
 
@@ -202,6 +206,59 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 }
 
 /* USER CODE BEGIN 1 */
+
+long Battery_read(void)
+{
+  unsigned long  temp;
+  
+  HAL_ADC_Start(&hadc1);  //ADC1
+  if(HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)  //ADC1
+  {
+    temp = (int32_t)HAL_ADC_GetValue(&hadc1);
+    HAL_ADC_Stop(&hadc1);
+  }
+  return temp;
+}
+
+unsigned char Battery_check(void)
+{
+  static long BatRawValue[11], BatRawCount, BatRawValueBack;
+  unsigned long temp;
+  unsigned char ret, i;
+  if(!ShortBeep)
+  {
+    BatRawValue[BatRawCount] = Battery_read();
+    BatRawValue[BatRawCount] = BatRawValue[BatRawCount] + BattOffSet;
+    BatRawCount++;
+    if(BatRawCount >= 10) BatRawCount = 0;
+    temp=0;
+    for(i = 0; i < 10; i++)
+    {
+      temp = BatRawValue[i] + temp;
+    }
+    BatRawValue[10] = temp/10;
+    BatRawValueBack = BatRawValue[10];
+  }
+  else
+  {
+    BatRawValue[10] = BatRawValueBack;
+  }
+
+  if(BatRawValue[10] >= 1330)
+  {
+    BatteryLevel = ((BatRawValue[10] - 1330)/3.3);
+  }
+  else
+  {
+    BatteryLevel = 0;
+  }
+  
+  if(BatteryLevel > 100) BatteryLevel =100;
+  if(BatRawValue[10] < 1420) ret = 1;  //3.4V
+  else ret = 0;
+  
+  return ret;
+}
 
 /* USER CODE END 1 */
 

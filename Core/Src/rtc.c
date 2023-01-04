@@ -161,13 +161,10 @@ void rtc_set(void)
     Print_Str6x8(0xFF,10,1,"Set Date and Time");
     
     mprintf(1, 3," Date : 20%02d. %02d. %02d", sDate.Year, sDate.Month, sDate.Date);
-    mprintf(1, 4," Time : %02d : %02d : %02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+    mprintf(1, 4," Time : %02d : %02d ", sTime.Hours, sTime.Minutes);
     while(!loop_out)
     {
         KEYPAD_Scan();
-        //TimeRead();
-        //mprintf(1, 3," Date : 20%02d. %02d. %02d", sDate.Year, sDate.Month, sDate.Date);
-        //mprintf(1, 4," Time : %02d : %02d : %02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
         PrintArrow(68,7,0);
         PrintArrow(80,7,1);
         PrintArrow(94,7,2);
@@ -188,6 +185,7 @@ void rtc_set(void)
           
           mprintf(1, 5,"Date & Time SAVE!!");
           HAL_Delay(1000);
+          Clear_Screen();
         }
                 
         else if( Key.PressFlg[12])
@@ -237,18 +235,18 @@ void rtc_set(void)
         {
           Key.PressFlg[4] = 0;
           bound--;
-          if(bound < 0) bound = 5;
+          if(bound < 0) bound = 4;
           mprintf(1, 3," Date : 20%02d. %02d. %02d", sDate.Year, sDate.Month, sDate.Date);
-          mprintf(1, 4," Time : %02d : %02d : %02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+          mprintf(1, 4," Time : %02d : %02d       ", sTime.Hours, sTime.Minutes);
         }
 
         else if ( Key.PressFlg[6] )
         {
           Key.PressFlg[6] = 0;
           bound++;
-          if(bound > 5) bound = 0;
+          if(bound > 4) bound = 0;
           mprintf(1, 3," Date : 20%02d. %02d. %02d", sDate.Year, sDate.Month, sDate.Date);
-          mprintf(1, 4," Time : %02d : %02d : %02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+          mprintf(1, 4," Time : %02d : %02d       ", sTime.Hours, sTime.Minutes);
         }
     
         else if ( Key.PressFlg[8] )
@@ -279,27 +277,21 @@ void rtc_set(void)
               sTime.Minutes--;
               if(sTime.Minutes<0 || sTime.Minutes>60) sTime.Minutes = 59;
           }
-          else if(bound == 5)
-          {
-              sTime.Seconds--;
-              if(sTime.Seconds<0 || sTime.Seconds>60) sTime.Seconds = 59;
-          }
         }
         
-        if(bound_count <= 20)
+        if(bound_count <= 100)
         {
           if(bound<=2) mprintf(1, 3," Date : 20%02d. %02d. %02d", sDate.Year, sDate.Month, sDate.Date);
-          else mprintf(1, 4," Time : %02d : %02d : %02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+          else mprintf(1, 4," Time : %02d : %02d        ", sTime.Hours, sTime.Minutes);
           bound_count++;
         }
-        else if(bound_count <= 40)
+        else if(bound_count <= 300)
         {
-          if     (bound==0) mprintf(1, 3," Date : 20  . %02d. %02d", sDate.Month, sDate.Date);
-          else if(bound==1) mprintf(1, 3," Date : 20%02d.   . %02d", sDate.Year, sDate.Date);
+          if     (bound==0) mprintf(1, 3," Date : 20  . %02d. ", sDate.Month, sDate.Date);
+          else if(bound==1) mprintf(1, 3," Date : 20%02d.   . ", sDate.Year, sDate.Date);
           else if(bound==2) mprintf(1, 3," Date : 20%02d. %02d.   ", sDate.Year, sDate.Month);
-          else if(bound==3) mprintf(1, 4," Time :    : %02d : %02d", sTime.Minutes, sTime.Seconds);
-          else if(bound==4) mprintf(1, 4," Time : %02d :    : %02d", sTime.Hours, sTime.Seconds);
-          else if(bound==5) mprintf(1, 4," Time : %02d : %02d :   ", sTime.Hours, sTime.Minutes);
+          else if(bound==3) mprintf(1, 4," Time :    : %02d  ", sTime.Minutes);
+          else if(bound==4) mprintf(1, 4," Time : %02d :    ", sTime.Hours);
           bound_count++;
         }
         else bound_count = 0;

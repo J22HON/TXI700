@@ -1,15 +1,10 @@
 #include "main.h"
 
-extern struct FUNCTION FunData;
-extern struct KEY Key;
+ extern struct FUNCTION FunData;
+ extern struct KEY Key;
 
-
-extern unsigned char            ShortBeep;
-
-
-
-
-
+ extern unsigned char            ShortBeep;
+ 
 void KEYPAD_Scan(void)
 {    
     if(KEY_IN1_READ | KEY_IN2_READ | KEY_IN3_READ | KEY_IN4_READ | KEY_IN5_READ)

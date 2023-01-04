@@ -265,6 +265,7 @@ typedef struct {
 } DMA_CircularBuffer;
 
 struct FUNCTION {
+    char Mode;
     char Filter_Degree;
     char Pad_Sel;
     char Stable;
@@ -283,9 +284,75 @@ struct FUNCTION {
     char Pad_Type;
     char Display_Used;
     char Print_Density;
+    char Auto_Zero;
     char KeyBeep;
+    char WimMode;
 };
 
+struct CAL {
+    long Zero[2];
+    unsigned long DpCapacity[2];
+    unsigned long CapaLimit[2];
+    unsigned long Resolution[2];
+    unsigned long TotalAnalogCount;
+    unsigned char OneDigitCount;
+    unsigned long OneDigit[2];
+    unsigned long HalfDigit[2];
+    unsigned long QuarterDigit[2];
+    unsigned long SpanWeight[2][5];
+    long SpanAdc[2][5];
+    unsigned char Division[2];
+    float CalInt[2][5];
+    unsigned char SpanCount;
+    unsigned char NowSpanCount;
+    unsigned long Gravity1;
+    unsigned long Gravity2;
+    long CalAdc[10];
+};
+
+struct PAN_ID {
+    unsigned char PanID_HI;
+    unsigned char PanID_LO;
+    unsigned char PanID_SUM;
+};
+
+struct UNIT {
+    char kg;
+    char g;
+    char lb;
+};
+
+struct STATE {
+    char CellErr;
+    char Hold;
+    char Tare;
+    char Stable[2];
+    char Zero;
+    char OverLoad;
+
+    char BatLo;
+    char BatLoLo;
+};
+
+struct AD_DATA {
+    long Zero[2];
+    long StartZero[2];
+    long ZeroBackUp[2];
+    long Tare;
+    long Hold;
+    long AvrFinal[2];
+    long AdcRaw[2];
+    long AdcRawBak[2];
+};
+
+struct WEIGHT {
+    long CurrentWt[2];
+    long RawWt[2];
+    long DisplayWt[2];
+    long Stable[2];
+    long TareWt[10];
+    long HoldWt;
+};
 
 // EEP
 void eeprom_4byte_write(unsigned long addr, unsigned long data);
@@ -315,7 +382,9 @@ void number_long(unsigned char chat);
 void function_read(void);
 void function_write(void);
 void function_reset(void);
+void cal_read(void);
 void cal_write(void);
+void multi_gap(unsigned long comp_value1, unsigned long comp_value2, unsigned char k, unsigned char j);
 
 // DISPLAY
 void Write_Command(unsigned char Command);
@@ -346,25 +415,34 @@ unsigned long DMA_Get_Cnt(DMA_CircularBuffer *cb);
 void DMA_CB_Read(DMA_CircularBuffer *cb, unsigned char* data, unsigned long cnt);
 void DMA_CB_PreRead(DMA_CircularBuffer *cb, unsigned char* data, unsigned long cnt);
 
+//ADC
+long Battery_read(void);
+unsigned char Battery_check(void);
+
 // AD
 void chip_select(unsigned char enable, unsigned char ad);
 long read_filtered_adc(unsigned char k);
 void adc_initial(void);
+void normal_mode();
 
 // KEY
 void KEYPAD_Scan(void);
+void Setting_Mode(void);
+
 
 // RTC
 void TimeRead(void);
 void rtc_set(void);
 
 // CAL
+void gravity_mode(void);
 void cal_mode(void);
 void zero_span_set(unsigned char flag); 
 unsigned int  cal_number_long(unsigned int init_value, unsigned char chat);
 
 // TEST
 void loadcell_test(void);
+
 
 #define FUNCTION01        1
 #define FUNCTION02        2
@@ -386,6 +464,8 @@ void loadcell_test(void);
 #define FUNCTION18        18
 #define FUNCTION19        19
 #define FUNCTION20        20
+#define MODE              99
+
 
 #define V_RES_FACTOR             100  // 4*5*2
 #define V_ADC_ORG                140  // 4*5*2
@@ -393,9 +473,7 @@ void loadcell_test(void);
 #define V_MAXIMUM_CAPACITY       188  // 4*2
 #define V_E_RESOLUTION           196  // 4*2
 #define V_MINIMUM_DIVISION       204  // 1*2
-#define V_MULTI_CAL              206  
-
-
+#define V_MULTI_CAL              206   
 
 void SystemClock_Config(void);
   

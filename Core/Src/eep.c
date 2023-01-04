@@ -2,32 +2,36 @@
 
 extern struct KEY Key;
 extern struct FUNCTION FunData;
+extern struct CAL Calibration;
 
-unsigned char   eeprom_add[2],
+ unsigned char   eeprom_add[2],
                  eeprom_data1[16],   
                  eeprom_data2[16],
                  eeprom_data3[16];  
 
-unsigned long   total_page,
+ unsigned long   total_page,
                  start_page,
                  end_page,
                  end_add;
 
-unsigned long   g_delay_cnt;
+ unsigned long   g_delay_cnt;
 
-extern unsigned char    v_ad_flag,
-                         v_multi_cal,
-                         v_minimum_division[2];  
+ extern unsigned char             v_ad_flag,
+                                   v_multi_cal,
+                                   v_minimum_division[2];  
 
-extern unsigned long    v_maximum_capacity[2],
-                         v_e_resolution[2],
-                         v_adc_org[2][5],
-                         v_zero[2],
-                         imsi_value,
-                         v_temp_long;
+ extern unsigned long             v_maximum_capacity[2],
+                                   v_e_resolution[2],
+                                   v_adc_org[2][5],
+                                   v_zero[2],
+                                   imsi_value,
+                                   v_temp_long;
+ 
+ extern unsigned short            v_gravity_factor1,
+                                   v_gravity_factor2; 
 
-extern float            v_res_factor[2][5];
-
+ extern float                     v_res_factor[2][5];
+ 
 void eeprom_4byte_write(unsigned long addr, unsigned long data)
 {
     unsigned long temp;
@@ -425,16 +429,53 @@ void function(void)
     unsigned int value = 1;
     char key_set = 0;
     char key_push = 0;
+    char Set_Step;
     
 RESET :   
   
     Clear_Screen();
-
     
-    Print_Str6x8(0xFF,10,1,"FuncTion Set");
+    Print_Str6x8(0xFF,10,1,"FuncTion Set");    
     
-    mprintf(1, 3," FuncTion : %02d", value);
-
+    Set_Step = eeprom_1byte_read(MODE);
+  
+    while(1)
+    {
+      KEYPAD_Scan();  
+        
+        if(Key.PressFlg[2])
+        {
+            Key.PressFlg[2] = 0;
+            Set_Step--;
+            if(Set_Step < 3) Set_Step = 4;
+        }
+          
+        else if(Key.PressFlg[8])
+        {
+            Key.PressFlg[8] = 0;
+            Set_Step++; 
+            if(Set_Step > 4) Set_Step = 3;
+        }
+        
+        else if(Key.PressFlg[12])
+        {
+            Clear_Screen();
+            Key.PressFlg[12] = 0;
+            return;
+        }
+        
+        else if(Key.PressFlg[13])
+        {
+            Clear_Screen();
+            Key.PressFlg[13] = 0;      
+            FunData.Mode = Set_Step;
+            eeprom_1byte_write(MODE, FunData.Mode);
+            break;
+        }
+      
+        Print_Str6x8(Set_Step, 1, 3, " Wireless         ");
+        Print_Str6x8(Set_Step, 1, 4, " Wired            ");
+    }
     
     while(1)
     {      
@@ -682,6 +723,7 @@ void number_long(unsigned char chat1)
 
 void function_read(void)
 {    
+    FunData.Mode = eeprom_1byte_read(MODE);
     FunData.Pad_Sel = eeprom_1byte_read(FUNCTION01);
     FunData.Stable = eeprom_1byte_read(FUNCTION02);    
     FunData.Weigh_In_Motion = eeprom_1byte_read(FUNCTION03);
@@ -724,7 +766,8 @@ void function_write(void)
 
 void function_reset(void)
 {
-    if(FunData.Pad_Sel<1 || FunData.Pad_Sel>16) FunData.Pad_Sel = 2;
+          if(FunData.Mode<3 || FunData.Mode>4) FunData.Mode = 3;
+    else if(FunData.Pad_Sel<1 || FunData.Pad_Sel>16) FunData.Pad_Sel = 2;
     else if(FunData.Stable<1 || FunData.Stable>9) FunData.Stable = 2;
     else if(FunData.Weigh_In_Motion<0 || FunData.Weigh_In_Motion>2) FunData.Weigh_In_Motion = 0;
     else if(FunData.Over_Enable<0 || FunData.Over_Enable>2) FunData.Over_Enable = 0; 
@@ -753,7 +796,7 @@ void cal_write(void)
    {
       for(i=0; i<5; i++)
       {        
-        eeprom_4byte_write(V_RES_FACTOR+(j*20)+(i*4), v_res_factor[j][i]);         	         
+        eeprom_float_write(V_RES_FACTOR+(j*20)+(i*4), v_res_factor[j][i]);         	         
         eeprom_4byte_write(V_ADC_ORG+(j*20)+(i*4), v_adc_org[j][i]);
       } 
    }
@@ -765,7 +808,7 @@ void cal_write(void)
         eeprom_4byte_write(V_E_RESOLUTION+(i*4), v_e_resolution[i]);        
         eeprom_1byte_write(V_MINIMUM_DIVISION+i, v_minimum_division[i]);
     }    
-    eeprom_1byte_write(V_MULTI_CAL, v_multi_cal);      
+    eeprom_1byte_write(V_MULTI_CAL, v_multi_cal); 
 }
 
 void cal_read(void)
@@ -776,8 +819,8 @@ void cal_read(void)
    {
       for(i=0; i<5; i++)
       {        
-        v_res_factor[j][i] =  eeprom_4byte_read(V_RES_FACTOR+(j+20)+(i*4));
-        v_adc_org[j][i] =  eeprom_4byte_read(V_ADC_ORG+(j+20)+(i*4));
+        v_res_factor[j][i] =  eeprom_float_read(V_RES_FACTOR+(j*20)+(i*4));
+        v_adc_org[j][i] =  eeprom_4byte_read(V_ADC_ORG+(j*20)+(i*4));
       } 
    }  
    
@@ -788,6 +831,6 @@ void cal_read(void)
                          
         v_e_resolution[i] = eeprom_4byte_read(V_E_RESOLUTION+(i*4));        
         v_minimum_division[i] = eeprom_1byte_read(V_MINIMUM_DIVISION+i);
-    }
+    }   
    v_multi_cal = eeprom_1byte_read(V_MULTI_CAL);
 }

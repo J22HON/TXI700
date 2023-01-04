@@ -68,6 +68,12 @@
 
   struct FUNCTION FunData;
   struct KEY Key;
+  struct CAL Calibration;
+  struct UNIT Unit;
+  struct PAN_ID Zigbee;
+  struct AD_DATA AdData;
+  struct STATE State;
+  struct WEIGHT Weight;
   
   extern RTC_HandleTypeDef hrtc;
   extern RTC_DateTypeDef sDate;
@@ -75,29 +81,54 @@
   
   DMA_CircularBuffer Uart1Rx, Uart2Rx, Uart3Rx;
   
-  unsigned char         ShortBeep,
-                         Time01Start,
-                         Time02Start,
-                         PowerOn,
-                         v_ad_flag,
-                         v_multi_cal,
-                         v_minimum_division[2];                         
+ unsigned char                  ShortBeep,
+                                 Time01Start,
+                                 Time02Start,
+                                 PowerOn,
+                                 v_ad_flag,
+                                 v_multi_cal,
+                                 v_minimum_division[2],
+                                 BatteryLevel,
+                                 pass_start,
+                                 cal_confirm,
+                                 stable_flag[2],
+                                 over_flag[2],
+                                 count[2],
+                                 v_az_scope,
+                                 imsi,
+                                 v_target,
+                                 Cal_ad_flag,
+                                 i,
+                                 v_cal_flag;                            
   
-  unsigned long         Time01Count,
-                         Time02Count,
-                         ShortBeepCount,
-                         RealTime,
-                         RealDate,
-                         v_maximum_capacity[2],
-                         v_e_resolution[2],
-                         v_adc_org[2][5],
-                         v_zero[2],
-                         imsi_value,
-                         v_temp_long;
+ unsigned long                  Time01Count,
+                                 Time02Count,
+                                 ShortBeepCount,
+                                 RealTime,
+                                 RealDate,                                                                                                                             
+                                 v_temp_long,
+                                 first_count,
+                                 SysTicFlg,
+                                 StableCount,
+                                 v_adc_org[2][5],
+                                 v_maximum_capacity[2],
+                                 v_e_resolution[2],
+                                 v_zero[2],
+                                 imsi_value,
+                                 diff[2],
+                                 diff1[2];    
+ 
+  unsigned short                 zero_count[2];
   
-  float	                 v_res_factor[2][5];
+  long                            BattOffSet,
+                                  prev_adc1[2],
+                                  v_adc1_buf,
+                                  v_adc3_buf,
+                                  v_e_value[2];
+                                 
+  unsigned int                   v_speed;   
   
-  unsigned int          v_speed;                  
+  float                          v_res_factor[2][5];
   
 /* USER CODE END 0 */
 
@@ -136,12 +167,18 @@ int main(void)
   
   LCD_DIMMING_OFF; 
   LCD_OFF;
+  ADC_CS1_HI;
+  ADC_CS2_HI;
+  
+  FunData.Filter_Degree = 9;
+  adc_initial();
+    
   OLED_Initialize();
   LOGO_Print(0);
   mprintf(43,6," TXI-700");
   mprintf(43,7,"VER T100");
   HAL_Delay(1500);
-  
+    
   HAL_RTC_WaitForSynchro(&hrtc);
   
   MX_DMA_Init();
@@ -185,22 +222,68 @@ int main(void)
   FunData.KeyBeep = 1;
   
   function_read();
-  function_reset();
-  cal_read();
-  
-  FunData.Filter_Degree = 5;
-  adc_initial();
+  function_reset();  
+  cal_read();  
+      
+  Clear_Screen();
   
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
+RETRY:
+  
+  for(i=0; i<2; i++)
+  {
+    do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);
 
+    if(( v_temp_long < 100) || (v_temp_long > 1000000l))	// LOAD CELL ERROR
+    { 
+      Battery_check(); 
+      mprintf(1, 3, " C H 0 2 ");
+      pass_start=0; 
+      HAL_Delay(700); 
+    } 
+    else
+    {
+      pass_start++;
+      multi_gap(v_temp_long, v_zero[i], 1, i);
+      do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);      
+      v_adc_org[i][0] = (unsigned long) ( ((float) v_temp_long) * v_res_factor[i][0] );
+    }
+  }
+  
+  if(cal_confirm==0) 
+  { 
+    if(pass_start!=2) 
+    {
+        pass_start=0; 
+        goto RETRY; 
+    }
+  }
+  
+  
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
     KEYPAD_Scan();
+    Battery_check();      
+    TimeRead();
+    
+    mprintf(1, 3," Date  : 20%02d. %02d. %02d", sDate.Year, sDate.Month, sDate.Date);
+    mprintf(1, 4," Time  : %02d : %02d       ", sTime.Hours, sTime.Minutes);
+          
+    if(BatteryLevel >= 95)      Batt_Lamp(114, 0, 4); 
+    else if(BatteryLevel >= 75) Batt_Lamp(114, 0, 3);
+    else if(BatteryLevel >= 50) Batt_Lamp(114, 0, 2);
+    else if(BatteryLevel >= 25) Batt_Lamp(114, 0, 1);
+    else if(BatteryLevel >= 10)  Batt_Lamp(114, 0, 0);
+    else
+    {
+      Batt_Lamp(114, 0, 1); HAL_Delay(50); Batt_Lamp(114, 0, 0); HAL_Delay(50);
+    }
+    
     if(Key.PressFlg[0])      { Key.PressFlg[0]=0; }
     else if(Key.PressFlg[1]) { Key.PressFlg[1]=0; }
     else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; }  
@@ -215,6 +298,12 @@ int main(void)
     else if(Key.PressFlg[11]) { Key.PressFlg[11]=0; }
     else if(Key.PressFlg[12]) { Key.PressFlg[12]=0; }
     else if(Key.PressFlg[13]) { Key.PressFlg[13]=0; }   
+    
+    normal_mode();
+    
+    mprintf(1, 5, " Wt1   : %d kg ",v_e_value[0]);
+    mprintf(1, 6, " Wt2   : %d kg ",v_e_value[1]);
+    
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -266,7 +355,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_USART2
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_USART2 
                               |RCC_PERIPHCLK_USART3|RCC_PERIPHCLK_LPUART1
                               |RCC_PERIPHCLK_LPTIM1|RCC_PERIPHCLK_LPTIM2
                               |RCC_PERIPHCLK_USB|RCC_PERIPHCLK_ADC;
