@@ -6,8 +6,8 @@
 #include <string.h>
 
  extern struct FUNCTION FunData;
- extern struct AD_DATA AdData;
- extern struct CAL Calibration;
+
+
 
  extern unsigned char             ShortBeep,
                                    Time01Start,
@@ -262,7 +262,7 @@ void normal_mode(void)
 
     if ( v_adc1_buf > prev_adc1[i] ) 	diff[i]  = v_adc1_buf   - prev_adc1[i];
     else                             	diff[i]  = prev_adc1[i] - v_adc1_buf;
-/*
+
     if(!v_cal_flag)
     {	
       if(FunData.Auto_Zero)
@@ -278,7 +278,7 @@ void normal_mode(void)
         }
         else  zero_count[i]=0;       
       }
-    }*/
+    }
           
     if(diff[i] > 9) count[i] = 1;
           

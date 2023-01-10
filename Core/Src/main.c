@@ -68,19 +68,14 @@
 
   struct FUNCTION FunData;
   struct KEY Key;
-  struct CAL Calibration;
-  struct UNIT Unit;
-  struct PAN_ID Zigbee;
-  struct AD_DATA AdData;
-  struct STATE State;
-  struct WEIGHT Weight;
+
   
   extern RTC_HandleTypeDef hrtc;
   extern RTC_DateTypeDef sDate;
   extern RTC_TimeTypeDef sTime;
   
   DMA_CircularBuffer Uart1Rx, Uart2Rx, Uart3Rx;
-  
+
  unsigned char                  ShortBeep,
                                  Time01Start,
                                  Time02Start,
@@ -99,7 +94,16 @@
                                  v_target,
                                  Cal_ad_flag,
                                  i,
-                                 v_cal_flag;                            
+                                 v_cal_flag,
+                                 UartTxBuf[TXBUFFERSIZE],
+                                 Uart1TxBuf[TXBUFFERSIZE],
+                                 Uart2TxBuf[TXBUFFERSIZE],
+                                 UartRxBuf[200],
+                                 Uart2RxBuf[200],
+                                 v_car_id[12],
+                                 v_item[10],
+                                 p_head[120],
+                                 pad;                            
   
  unsigned long                  Time01Count,
                                  Time02Count,
@@ -116,17 +120,21 @@
                                  v_zero[2],
                                  imsi_value,
                                  diff[2],
-                                 diff1[2];    
+                                 diff1[2],
+                                 GetCurrRecvCount,          
+                                 GetPreRecvCount,
+                                 CmdWaitCount;    
  
   unsigned short                 zero_count[2];
   
   long                            BattOffSet,
                                   prev_adc1[2],
-                                  v_adc1_buf,
+                                  v_adc1_buf, 
                                   v_adc3_buf,
                                   v_e_value[2];
                                  
-  unsigned int                   v_speed;   
+  unsigned int                   v_speed,
+                                  hlpuart1RxCnt;   
   
   float                          v_res_factor[2][5];
   
@@ -136,7 +144,7 @@
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
+int main(void) 
 {
 
   /* USER CODE BEGIN 1 */
@@ -169,13 +177,11 @@ int main(void)
   LCD_OFF;
   ADC_CS1_HI;
   ADC_CS2_HI;
+  ZIGBEE_ON;
   
-  FunData.Filter_Degree = 9;
-  adc_initial();
-    
   OLED_Initialize();
   LOGO_Print(0);
-  mprintf(43,6," TXI-700");
+  mprintf(43,6," TXI-700"); 
   mprintf(43,7,"VER T100");
   HAL_Delay(1500);
     
@@ -219,48 +225,51 @@ int main(void)
   MX_USB_DEVICE_Init();
   ShortBeep = 1;
   PowerOn = 1;
-  FunData.KeyBeep = 1;
   
   function_read();
-  function_reset();  
+  function_range();  
+  if(FunData.Mode != 3 || FunData.Mode != 4) function_reset();
   cal_read();  
-      
+  adc_initial();    
   Clear_Screen();
   
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
+  
 RETRY:
   
-  for(i=0; i<2; i++)
+  if(FunData.Mode == 4)
   {
-    do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);
+    for(i=0; i<2; i++)
+    {
+      do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);
 
-    if(( v_temp_long < 100) || (v_temp_long > 1000000l))	// LOAD CELL ERROR
-    { 
-      Battery_check(); 
-      mprintf(1, 3, " C H 0 2 ");
-      pass_start=0; 
-      HAL_Delay(700); 
-    } 
-    else
-    {
-      pass_start++;
-      multi_gap(v_temp_long, v_zero[i], 1, i);
-      do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);      
-      v_adc_org[i][0] = (unsigned long) ( ((float) v_temp_long) * v_res_factor[i][0] );
-    }
-  }
-  
-  if(cal_confirm==0) 
-  { 
-    if(pass_start!=2) 
-    {
+      if(( v_temp_long < 100) || (v_temp_long > 1000000l))	// LOAD CELL ERROR
+      { 
+        Battery_check(); 
+        mprintf(1, 3, " C H 0 2 ");
         pass_start=0; 
-        goto RETRY; 
+        HAL_Delay(700); 
+      } 
+      else
+      {
+        pass_start++;
+        multi_gap(v_temp_long, v_zero[i], 1, i);
+        do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);      
+        v_adc_org[i][0] = (unsigned long) ( ((float) v_temp_long) * v_res_factor[i][0] );
+      }
+    }
+    
+    if(cal_confirm==0) 
+    { 
+      if(pass_start!=2) 
+      {
+          pass_start=0; 
+          goto RETRY; 
+      }
     }
   }
-  
   
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -269,41 +278,54 @@ RETRY:
     /* USER CODE END WHILE */
     KEYPAD_Scan();
     Battery_check();      
-    TimeRead();
+    TimeRead();   
     
-    mprintf(1, 3," Date  : 20%02d. %02d. %02d", sDate.Year, sDate.Month, sDate.Date);
-    mprintf(1, 4," Time  : %02d : %02d       ", sTime.Hours, sTime.Minutes);
-          
+    /*
+    Uart1TxBuf[0] = 0x21;
+    Uart1TxBuf[1] = 49+pad;
+    Uart1TxBuf[2] = 0x5B;
+    if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 3)!= HAL_OK)
+    {
+      Error_Handler();
+    }
+    HAL_Delay(100);     */  
+    
     if(BatteryLevel >= 95)      Batt_Lamp(114, 0, 4); 
     else if(BatteryLevel >= 75) Batt_Lamp(114, 0, 3);
     else if(BatteryLevel >= 50) Batt_Lamp(114, 0, 2);
     else if(BatteryLevel >= 25) Batt_Lamp(114, 0, 1);
     else if(BatteryLevel >= 10)  Batt_Lamp(114, 0, 0);
-    else
-    {
-      Batt_Lamp(114, 0, 1); HAL_Delay(50); Batt_Lamp(114, 0, 0); HAL_Delay(50);
-    }
+    else { Batt_Lamp(114, 0, 1); HAL_Delay(50); Batt_Lamp(114, 0, 0); HAL_Delay(50); }
     
     if(Key.PressFlg[0])      { Key.PressFlg[0]=0; }
     else if(Key.PressFlg[1]) { Key.PressFlg[1]=0; }
-    else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; }  
-    else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; }
-    else if(Key.PressFlg[4]) { Key.PressFlg[4]=0; }
+    else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; heading_edit();}  
+    else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; Memory_Input(CAR);}
+    else if(Key.PressFlg[4]) { Key.PressFlg[4]=0; Memory_Input(ITEM);}
     else if(Key.PressFlg[5]) { Key.PressFlg[5]=0; }
     else if(Key.PressFlg[6]) { Key.PressFlg[6]=0; loadcell_test();}
-    else if(Key.PressFlg[7]) { Key.PressFlg[7]=0; cal_mode();}
-    else if(Key.PressFlg[8]) { Key.PressFlg[8]=0; rtc_set();}
-    else if(Key.PressFlg[9]) { Key.PressFlg[9]=0; function();}
+    else if(Key.PressFlg[7]) { Key.PressFlg[7]=0; }
+    else if(Key.PressFlg[8]) { Key.PressFlg[8]=0; }
+    else if(Key.PressFlg[9]) { Key.PressFlg[9]=0; Setting_Mode();}
     else if(Key.PressFlg[10]) { Key.PressFlg[10]=0; }
     else if(Key.PressFlg[11]) { Key.PressFlg[11]=0; }
     else if(Key.PressFlg[12]) { Key.PressFlg[12]=0; }
     else if(Key.PressFlg[13]) { Key.PressFlg[13]=0; }   
     
-    normal_mode();
+
+    if(FunData.Mode==4) normal_mode();
+    mprintf(1, 1,"PAD%d",FunData.Pad_Sel);    
+    mprintf(37, 1,"SUM");
+    mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);    
+    wprintf(" %5ld",10000);
+
+    Print_Str6x8(0xFF, 112, 7, " kg");
     
-    mprintf(1, 5, " Wt1   : %d kg ",v_e_value[0]);
-    mprintf(1, 6, " Wt2   : %d kg ",v_e_value[1]);
-    
+    lamp_on();
+    /*    
+    Cmd_Recv_Check(&Uart1Rx); */
+
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

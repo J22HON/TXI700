@@ -38,6 +38,7 @@ void loadcell_test(void)
       }
       else return;
       
+      Clear_Screen();
       HAL_Delay(500);
       break;
     }      
@@ -59,11 +60,12 @@ void loadcell_test(void)
     {
       mprintf(1, 3, " C H 0 2          ");
     } 
-    else mprintf(1, 3, "     AD : %6d",temp_long/5);
+    else mprintf(1, 3, "     AD : %d",temp_long/5);
 
     if(Key.PressFlg[13])
     {
        Key.PressFlg[13] = 0;
+       Clear_Screen();
        break;         
     }
   }

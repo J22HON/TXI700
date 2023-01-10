@@ -2,7 +2,6 @@
 
 extern struct KEY Key;
 extern struct FUNCTION FunData;
-extern struct CAL Calibration;
 
  unsigned char   eeprom_add[2],
                  eeprom_data1[16],   
@@ -429,54 +428,14 @@ void function(void)
     unsigned int value = 1;
     char key_set = 0;
     char key_push = 0;
-    char Set_Step;
     
-RESET :   
+RESET :  
   
     Clear_Screen();
-    
-    Print_Str6x8(0xFF,10,1,"FuncTion Set");    
-    
-    Set_Step = eeprom_1byte_read(MODE);
+    Print_Str6x8(0xFF,10,1,"FuncTion Set");
+    if(FunData.Mode==3) mprintf(1, 2,"  - Wireless -   ");
+    else if(FunData.Mode==4) mprintf(1, 2,"  - Wired -   ");
   
-    while(1)
-    {
-      KEYPAD_Scan();  
-        
-        if(Key.PressFlg[2])
-        {
-            Key.PressFlg[2] = 0;
-            Set_Step--;
-            if(Set_Step < 3) Set_Step = 4;
-        }
-          
-        else if(Key.PressFlg[8])
-        {
-            Key.PressFlg[8] = 0;
-            Set_Step++; 
-            if(Set_Step > 4) Set_Step = 3;
-        }
-        
-        else if(Key.PressFlg[12])
-        {
-            Clear_Screen();
-            Key.PressFlg[12] = 0;
-            return;
-        }
-        
-        else if(Key.PressFlg[13])
-        {
-            Clear_Screen();
-            Key.PressFlg[13] = 0;      
-            FunData.Mode = Set_Step;
-            eeprom_1byte_write(MODE, FunData.Mode);
-            break;
-        }
-      
-        Print_Str6x8(Set_Step, 1, 3, " Wireless         ");
-        Print_Str6x8(Set_Step, 1, 4, " Wired            ");
-    }
-    
     while(1)
     {      
         KEYPAD_Scan();        
@@ -497,6 +456,8 @@ RESET :
           Key.PressFlg[13] = 0;
           if(!value)
           {
+            function_write();
+            function_range();
             Clear_Screen();
             break;
           }
@@ -513,15 +474,15 @@ RESET :
         }
         if(value > 20) value = 0;
         key_set = 0;
-               
+                       
         if(bound_count <= 800)
         {
-          mprintf(1, 3," FuncTion : %02d", value);
+          mprintf(1, 4," FuncTion : %02d", value);
           bound_count++;
         }
         else if(bound_count <= 1200)
         {
-          mprintf(1, 3," FuncTion :      ", value);
+          mprintf(1, 4," FuncTion :      ", value);
           bound_count++;
         }
         else bound_count = 0;
@@ -530,9 +491,20 @@ RESET :
     if(value)
     {
       number_long(value);    
-      if(value<17) value++;
-      else value = 1;
-      goto RESET;
+      
+      if(FunData.Mode == 3)
+      {
+        if(value<18) value++;
+        else value = 0;
+        goto RESET;
+      }
+      
+      else if(FunData.Mode == 4)
+      {
+        if(value<16) value++;
+        else value = 0;
+        goto RESET;
+      }
     }
 }
 
@@ -540,85 +512,171 @@ void title_Function(unsigned char set_num)
 {  
   Clear_Screen();
   
-  switch(set_num)
+  if(FunData.Mode == 3)
   {
-      case 1:
-          mprintf(1, 2,"  Number of scales to");
-          mprintf(1, 3," be linked wireless  ");
-          break;
-      
-      case 2:
-          mprintf(1, 2,"  Stable condition  ");
-          break;
+    switch(set_num)
+    {
+        case 1:
+            mprintf(1, 2,"  Number of Scales to");
+            mprintf(1, 3,"  be Linked Wireless ");
+            break;
+        
+        case 2:
+            mprintf(1, 2,"  Stable Condition  ");
+            break;
 
-      case 3:
-          mprintf(1, 2,"  Weigh-In-Motion   ");
-          break;
-          
-      case 4:
-          mprintf(1, 2,"  Excess Enable     ");
-          break;
+        case 3:
+            mprintf(1, 2,"  Weigh-In-Motion   ");
+            break;
+            
+        case 4:
+            mprintf(1, 2,"  Excess Enable     ");
+            break;
 
-      case 5:
-          mprintf(1, 2,"  Print format      ");
-          break;
+        case 5:
+            mprintf(1, 2,"  Print Format      ");
+            break;
 
-      case 6:
-          mprintf(1, 2,"  Number of copies  ");
-          break;
+        case 6:
+            mprintf(1, 2,"  Number of Copies  ");
+            break;
 
-      case 7:
-          mprintf(1, 2,"  Line feed         ");
-          break;
-          
-      case 8:
-          mprintf(1, 2,"  Enable Printer    ");
-          break;          
-          
-      case 9:
-          mprintf(1, 2,"  Data format for   ");
-          mprintf(1, 3," auxiliary display  ");
-          break;  
-          
-      case 10:
-          mprintf(1, 2,"  External wireless ");
-          mprintf(1, 3," output             ");
-          break;                   
-          
-      case 11:
-          mprintf(1, 2,"  Power off sync    ");
-          break;    
-          
-      case 12:
-          mprintf(1, 2,"  Automatic measuring");
-          mprintf(1, 3," (A-WIM)             ");       
-          break;    
-          
-      case 13:
-          mprintf(1, 2,"  Auto weighing      ");
-          mprintf(1, 3," stable time         ");
-          break;          
-          
-      case 14:
-          mprintf(1, 2,"  Auto print time    ");
-          break;   
-          
-      case 15:
-          mprintf(1, 2,"  Pad type used      ");
-          break;  
-          
-      case 16:
-          mprintf(1, 2,"  Power saving mode  ");
-          mprintf(1, 3,"  Display used       ");
-          break;  
-          
-      case 17:
-          mprintf(1, 2,"  Print density      ");
-          break;
+        case 7:
+            mprintf(1, 2,"  Line Feed         ");
+            break;
+            
+        case 8:
+            mprintf(1, 2,"  Enable Printer    ");
+            break;          
+            
+        case 9:
+            mprintf(1, 2,"  Data Format       ");  
+            break;  
+            
+        case 10:
+            mprintf(1, 2,"  External Wireless ");
+            mprintf(1, 3,"  Output            ");
+            break;                   
+            
+        case 11:
+            mprintf(1, 2,"  Power Off Sync    ");
+            break;    
+            
+        case 12:
+            mprintf(1, 2,"  Automatic Measuring");
+            mprintf(1, 3,"  (A-WIM)            ");       
+            break;    
+            
+        case 13:
+            mprintf(1, 2,"  Auto Weighing      ");
+            mprintf(1, 3,"  Stable Time        ");
+            break;          
+            
+        case 14:
+            mprintf(1, 2,"  Auto Print Time    ");
+            break;   
+            
+        case 15:
+            mprintf(1, 2,"  Pad Type Used      ");
+            break;  
+            
+        case 16:
+            mprintf(1, 2,"  Power Saving Mode  ");
+            mprintf(1, 3,"  Display Used       ");
+            break;  
+            
+        case 17:
+            mprintf(1, 2,"  Print Density      ");
+            break;
+            
+        case 18:
+            mprintf(1, 2,"  Function Key Set   ");
+            break;
 
-      default:
-          break;          
-  }  
+        default:
+            break;          
+    }  
+  }
+  
+  else if(FunData.Mode == 4)
+  {
+    switch(set_num)
+    {
+        case 1:
+            mprintf(1, 2,"  Adjustment          ");
+            mprintf(1, 2,"  The Speed of        ");
+            mprintf(1, 4,"  Weight Change       ");
+            break;
+        
+        case 2:
+            mprintf(1, 2,"  Stable Condition   ");
+            break;
+
+        case 3:
+            mprintf(1, 2,"  Auto Zero          ");
+            mprintf(1, 3,"  Condition Set      ");
+            break;
+            
+        case 4:
+            mprintf(1, 2,"  Weigh-In-Motion    ");
+            break;
+
+        case 5:
+            mprintf(1, 2,"  Excess Weight     ");
+            break;
+
+        case 6:
+            mprintf(1, 2,"  Auto Weighing     ");
+            mprintf(1, 3,"  Stable Time       ");            
+            break;
+
+        case 7:
+            mprintf(1, 2,"  Auto Print Time   ");
+            break;
+            
+        case 8:
+            mprintf(1, 2,"  Print Format      ");
+            break;          
+            
+        case 9:
+            mprintf(1, 2,"  Number of Copies  ");
+            break;  
+            
+        case 10:
+            mprintf(1, 2,"  Line Feed         ");
+            break;                   
+            
+        case 11:
+            mprintf(1, 2,"  Enable Printer    ");
+            break;    
+            
+        case 12:
+            mprintf(1, 2,"  Data Format       ");      
+            break;    
+            
+        case 13:
+            mprintf(1, 2,"  External Wireless ");
+            mprintf(1, 3,"  Output            ");
+            break;          
+            
+        case 14:
+            mprintf(1, 2,"  Adjustment        ");
+            mprintf(1, 3,"  The Hold Speed    ");
+            break;   
+            
+        case 15:
+            mprintf(1, 2,"  Initialization    ");
+            mprintf(1, 3,"  Hold Weight       ");
+            break;  
+            
+        case 16:
+            mprintf(1, 2,"  Print density      ");
+            break;  
+            
+        default:
+            break;          
+    }
+  }
 }
 
 void number_long(unsigned char chat1)
@@ -628,25 +686,48 @@ void number_long(unsigned char chat1)
   char key_push = 0;
   unsigned int bound_count = 0;
   
-  if(chat1==1) value = eeprom_1byte_read(FUNCTION01); 
-  else if(chat1==2) value = eeprom_1byte_read(FUNCTION02); 
-  else if(chat1==3) value = eeprom_1byte_read(FUNCTION03); 
-  else if(chat1==4) value = eeprom_1byte_read(FUNCTION04);
-  else if(chat1==5) value = eeprom_1byte_read(FUNCTION05);
-  else if(chat1==6) value = eeprom_1byte_read(FUNCTION06);
-  else if(chat1==7) value = eeprom_1byte_read(FUNCTION07);
-  else if(chat1==8) value = eeprom_1byte_read(FUNCTION08);
-  else if(chat1==9) value = eeprom_1byte_read(FUNCTION09);
-  else if(chat1==10) value = eeprom_1byte_read(FUNCTION10);
-  else if(chat1==11) value = eeprom_1byte_read(FUNCTION11);
-  else if(chat1==12) value = eeprom_1byte_read(FUNCTION12);
-  else if(chat1==13) value = eeprom_1byte_read(FUNCTION13);
-  else if(chat1==14) value = eeprom_1byte_read(FUNCTION14);
-  else if(chat1==15) value = eeprom_1byte_read(FUNCTION15);
-  else if(chat1==16) value = eeprom_1byte_read(FUNCTION16);
-  else if(chat1==17) value = eeprom_1byte_read(FUNCTION17);
-  else chat1 = 1;
-
+  if(FunData.Mode==3)
+  {
+    if(chat1==1) value = eeprom_1byte_read(PAD_SEL); 
+    else if(chat1==2) value = eeprom_1byte_read(STABLE); 
+    else if(chat1==3) value = eeprom_1byte_read(WEIGH_IN_MOTION); 
+    else if(chat1==4) value = eeprom_1byte_read(OVER_ENABLE);
+    else if(chat1==5) value = eeprom_1byte_read(PRINT_FORM);
+    else if(chat1==6) value = eeprom_1byte_read(PRINT_COPIES);
+    else if(chat1==7) value = eeprom_1byte_read(LINEFEED);
+    else if(chat1==8) value = eeprom_1byte_read(PRINT_ENABLE);
+    else if(chat1==9) value = eeprom_1byte_read(DATA_FORMAT);
+    else if(chat1==10) value = eeprom_1byte_read(WIRELESS_OUTPUT);
+    else if(chat1==11) value = eeprom_1byte_read(OFF_SYNS);
+    else if(chat1==12) value = eeprom_1byte_read(AUTO_MEASURING);
+    else if(chat1==13) value = eeprom_1byte_read(AUTO_STABLE);
+    else if(chat1==14) value = eeprom_1byte_read(AUTO_PRINT);
+    else if(chat1==15) value = eeprom_1byte_read(PAD_TYPE);
+    else if(chat1==16) value = eeprom_1byte_read(DISPLAY_USED);
+    else if(chat1==17) value = eeprom_1byte_read(PRINT_DENSITY);
+    else if(chat1==18) value = eeprom_1byte_read(FUNC_KEY);
+  }
+  
+  else if(FunData.Mode==4)
+  {
+    if(chat1==1) value = eeprom_1byte_read(FILTER_DEGREE); 
+    else if(chat1==2) value = eeprom_1byte_read(STABLE); 
+    else if(chat1==3) value = eeprom_1byte_read(AUTO_ZERO); 
+    else if(chat1==4) value = eeprom_1byte_read(WEIGH_IN_MOTION);
+    else if(chat1==5) value = eeprom_1byte_read(OVER_ENABLE);
+    else if(chat1==6) value = eeprom_1byte_read(OW_TIME);
+    else if(chat1==7) value = eeprom_1byte_read(AUTO_PRINT);
+    else if(chat1==8) value = eeprom_1byte_read(PRINT_FORM);
+    else if(chat1==9) value = eeprom_1byte_read(PRINT_COPIES);
+    else if(chat1==10) value = eeprom_1byte_read(LINEFEED);
+    else if(chat1==11) value = eeprom_1byte_read(PRINT_ENABLE);
+    else if(chat1==12) value = eeprom_1byte_read(DATA_FORMAT);
+    else if(chat1==13) value = eeprom_1byte_read(WIRELESS_OUTPUT);
+    else if(chat1==14) value = eeprom_1byte_read(HOLD_SPEED);
+    else if(chat1==15) value = eeprom_1byte_read(HOLD_ZERO);
+    else if(chat1==16) value = eeprom_1byte_read(PRINT_DENSITY);
+  }
+  
   while(1)
   {
       KEYPAD_Scan();        
@@ -665,27 +746,6 @@ void number_long(unsigned char chat1)
       else if(Key.PressFlg[13]) 
       { 
         Key.PressFlg[13] = 0;  
-        if(chat1==1) eeprom_1byte_write(FUNCTION01, value);          
-        else if(chat1==2) eeprom_1byte_write(FUNCTION02, value);          
-        else if(chat1==3) eeprom_1byte_write(FUNCTION03, value);  
-        else if(chat1==4) eeprom_1byte_write(FUNCTION04, value);  
-        else if(chat1==5) eeprom_1byte_write(FUNCTION05, value);  
-        else if(chat1==6) eeprom_1byte_write(FUNCTION06, value);  
-        else if(chat1==7) eeprom_1byte_write(FUNCTION07, value);  
-        else if(chat1==8) eeprom_1byte_write(FUNCTION08, value);  
-        else if(chat1==9) eeprom_1byte_write(FUNCTION09, value);  
-        else if(chat1==10) eeprom_1byte_write(FUNCTION10, value);  
-        else if(chat1==11) eeprom_1byte_write(FUNCTION11, value);  
-        else if(chat1==12) eeprom_1byte_write(FUNCTION12, value);  
-        else if(chat1==13) eeprom_1byte_write(FUNCTION13, value);  
-        else if(chat1==14) eeprom_1byte_write(FUNCTION14, value);  
-        else if(chat1==15) eeprom_1byte_write(FUNCTION15, value);  
-        else if(chat1==16) eeprom_1byte_write(FUNCTION16, value);  
-        else if(chat1==17) eeprom_1byte_write(FUNCTION17, value);  
-        else if(chat1==18) eeprom_1byte_write(FUNCTION18, value);  
-        else if(chat1==19) eeprom_1byte_write(FUNCTION19, value);  
-        else if(chat1==20) eeprom_1byte_write(FUNCTION20, value); 
-        function_reset();
         break; 
       }
            
@@ -696,15 +756,27 @@ void number_long(unsigned char chat1)
           value += key_set;
           key_push = 0;
       }
-      if(chat1==1 && ( value < 0 || value > 16)) value = 0;
-      else if( chat1==2 && (value > 9 || value < 0)) value = 0;
-      else if( (chat1==3 || chat1==4 || chat1==15) && (value > 2 || value < 0)) value = 0;
-      else if( (chat1==5 || chat1==7 || chat1==17) && (value > 9 || value < 0)) value = 0;
-      else if( (chat1==6 || chat1==8 || chat1==9 || chat1==10 || chat1==11 || 
-                 chat1==13 || chat1==14 || chat1==16) && (value > 1 || value < 0)) value = 0;
-      else if( chat1==12 && (value > 30 || value < 5)) value = 0;          
-      key_set = 0;                     
       
+      if(FunData.Mode == 3)
+      {
+        if( chat1 ==1 && ( value < 0 || value > 16)) value = 0;
+        else if( (chat1==2 || chat1==5 || chat1==7 || chat1==17) && (value > 9 || value < 0)) value = 0;
+        else if( (chat1==3 || chat1==4 || chat1==15) && (value > 2 || value < 0)) value = 0;
+        else if( (chat1==6 || chat1==8 || chat1==9 || chat1==10 || chat1==11 || 
+                  chat1==13 || chat1==14 || chat1==16 || chat1==18) && (value > 1 || value < 0)) value = 0;
+        else if( chat1==12 && (value > 30 || value < 5)) value = 0;          
+      }
+      
+      else if(FunData.Mode == 4)
+      {
+        if( (chat1==1 || chat1==2 || chat1==3 || chat1 == 6 || chat1 == 7 || chat1 == 8 ||
+             chat1==10 || chat1 ==14 || chat1==15 || chat1==16) && ( value < 0 || value > 9)) value = 0;
+        else if ( (chat1==4 || chat1 == 9 || chat1==11 || chat1==12 || chat1==13) && ( value < 0 || value > 1)) value = 0;
+        else if( (chat1==5 ) && (value > 2 || value < 0)) value = 0;        
+      }
+            
+      key_set = 0;                     
+            
       if(bound_count <= 800)
       {
         if(chat1==1 || chat1==12)      mprintf(1, 5,"         %02d", value);
@@ -724,47 +796,59 @@ void number_long(unsigned char chat1)
 void function_read(void)
 {    
     FunData.Mode = eeprom_1byte_read(MODE);
-    FunData.Pad_Sel = eeprom_1byte_read(FUNCTION01);
-    FunData.Stable = eeprom_1byte_read(FUNCTION02);    
-    FunData.Weigh_In_Motion = eeprom_1byte_read(FUNCTION03);
-    FunData.Over_Enable = eeprom_1byte_read(FUNCTION04);
-    FunData.Print_Form = eeprom_1byte_read(FUNCTION05);
-    FunData.Print_Copies = eeprom_1byte_read(FUNCTION06);
-    FunData.LineFeed = eeprom_1byte_read(FUNCTION07);
-    FunData.Print_Enable = eeprom_1byte_read(FUNCTION08);
-    FunData.Data_Format = eeprom_1byte_read(FUNCTION09);
-    FunData.Wireless_Output = eeprom_1byte_read(FUNCTION10);
-    FunData.Off_Syns = eeprom_1byte_read(FUNCTION11);
-    FunData.Auto_Measuring = eeprom_1byte_read(FUNCTION12);
-    FunData.Auto_Stable = eeprom_1byte_read(FUNCTION13);
-    FunData.Auto_Print = eeprom_1byte_read(FUNCTION14);
-    FunData.Pad_Type = eeprom_1byte_read(FUNCTION15);
-    FunData.Display_Used = eeprom_1byte_read(FUNCTION16);  
-    FunData.Print_Density = eeprom_1byte_read(FUNCTION17);  
+    FunData.Pad_Sel = eeprom_1byte_read(PAD_SEL);
+    FunData.Stable = eeprom_1byte_read(STABLE);    
+    FunData.Weigh_In_Motion = eeprom_1byte_read(WEIGH_IN_MOTION);
+    FunData.Over_Enable = eeprom_1byte_read(OVER_ENABLE);
+    FunData.Print_Form = eeprom_1byte_read(PRINT_FORM);
+    FunData.Print_Copies = eeprom_1byte_read(PRINT_COPIES);
+    FunData.LineFeed = eeprom_1byte_read(LINEFEED);
+    FunData.Print_Enable = eeprom_1byte_read(PRINT_ENABLE);
+    FunData.Data_Format = eeprom_1byte_read(DATA_FORMAT);
+    FunData.Wireless_Output = eeprom_1byte_read(WIRELESS_OUTPUT);
+    FunData.Off_Syns = eeprom_1byte_read(OFF_SYNS);
+    FunData.Auto_Measuring = eeprom_1byte_read(AUTO_MEASURING);
+    FunData.Auto_Stable = eeprom_1byte_read(AUTO_STABLE);
+    FunData.Auto_Print = eeprom_1byte_read(AUTO_PRINT);
+    FunData.Pad_Type = eeprom_1byte_read(PAD_TYPE);
+    FunData.Display_Used = eeprom_1byte_read(DISPLAY_USED);  
+    FunData.Print_Density = eeprom_1byte_read(PRINT_DENSITY);  
+    FunData.Func_Key = eeprom_1byte_read(FUNC_KEY);
+    FunData.Filter_Degree = eeprom_1byte_read(FILTER_DEGREE);
+    FunData.Hold_Speed = eeprom_1byte_read(HOLD_SPEED);
+    FunData.Hold_Zero = eeprom_1byte_read(HOLD_ZERO);
+    FunData.Ow_Time = eeprom_1byte_read(OW_TIME);
+    FunData.KeyBeep = 1;
 }
 
 void function_write(void)
 {    
-    eeprom_1byte_write(FUNCTION01, FunData.Pad_Sel);          
-    eeprom_1byte_write(FUNCTION02, FunData.Stable);          
-    eeprom_1byte_write(FUNCTION03, FunData.Weigh_In_Motion);  
-    eeprom_1byte_write(FUNCTION04, FunData.Over_Enable);  
-    eeprom_1byte_write(FUNCTION05, FunData.Print_Form);  
-    eeprom_1byte_write(FUNCTION06, FunData.Print_Copies);  
-    eeprom_1byte_write(FUNCTION07, FunData.LineFeed);  
-    eeprom_1byte_write(FUNCTION08, FunData.Print_Enable);  
-    eeprom_1byte_write(FUNCTION09, FunData.Data_Format);  
-    eeprom_1byte_write(FUNCTION10, FunData.Wireless_Output);  
-    eeprom_1byte_write(FUNCTION11, FunData.Off_Syns);  
-    eeprom_1byte_write(FUNCTION12, FunData.Auto_Measuring);  
-    eeprom_1byte_write(FUNCTION13, FunData.Auto_Stable);  
-    eeprom_1byte_write(FUNCTION14, FunData.Auto_Print);  
-    eeprom_1byte_write(FUNCTION15, FunData.Pad_Type);  
-    eeprom_1byte_write(FUNCTION16, FunData.Display_Used);  
-    eeprom_1byte_write(FUNCTION17, FunData.Print_Density);  
+    eeprom_1byte_write(MODE, FunData.Mode); 
+    eeprom_1byte_write(PAD_SEL, FunData.Pad_Sel);          
+    eeprom_1byte_write(STABLE, FunData.Stable);          
+    eeprom_1byte_write(WEIGH_IN_MOTION, FunData.Weigh_In_Motion);  
+    eeprom_1byte_write(OVER_ENABLE, FunData.Over_Enable);  
+    eeprom_1byte_write(PRINT_FORM, FunData.Print_Form);  
+    eeprom_1byte_write(PRINT_COPIES, FunData.Print_Copies);  
+    eeprom_1byte_write(LINEFEED, FunData.LineFeed);  
+    eeprom_1byte_write(PRINT_ENABLE, FunData.Print_Enable);  
+    eeprom_1byte_write(DATA_FORMAT, FunData.Data_Format);  
+    eeprom_1byte_write(WIRELESS_OUTPUT, FunData.Wireless_Output);  
+    eeprom_1byte_write(OFF_SYNS, FunData.Off_Syns);  
+    eeprom_1byte_write(AUTO_MEASURING, FunData.Auto_Measuring);  
+    eeprom_1byte_write(AUTO_STABLE, FunData.Auto_Stable);  
+    eeprom_1byte_write(AUTO_PRINT, FunData.Auto_Print);  
+    eeprom_1byte_write(PAD_TYPE, FunData.Pad_Type);  
+    eeprom_1byte_write(DISPLAY_USED, FunData.Display_Used);   
+    eeprom_1byte_write(PRINT_DENSITY, FunData.Print_Density);
+    eeprom_1byte_write(FUNC_KEY, FunData.Func_Key); 
+    eeprom_1byte_write(FILTER_DEGREE, FunData.Filter_Degree);  
+    eeprom_1byte_write(HOLD_SPEED, FunData.Hold_Speed);  
+    eeprom_1byte_write(HOLD_ZERO, FunData.Hold_Zero);  
+    eeprom_1byte_write(OW_TIME, FunData.Ow_Time); 
 }
 
-void function_reset(void)
+void function_range(void)
 {
           if(FunData.Mode<3 || FunData.Mode>4) FunData.Mode = 3;
     else if(FunData.Pad_Sel<1 || FunData.Pad_Sel>16) FunData.Pad_Sel = 2;
@@ -784,6 +868,42 @@ void function_reset(void)
     else if(FunData.Pad_Type<0 || FunData.Pad_Type>2) FunData.Pad_Type = 0;
     else if(FunData.Display_Used<0 || FunData.Display_Used>1) FunData.Display_Used = 0; 
     else if(FunData.Print_Density<0 || FunData.Print_Density>9) FunData.Print_Density = 4;
+    else if(FunData.Func_Key<0 || FunData.Func_Key>1) FunData.Func_Key = 0;
+    else if(FunData.Filter_Degree<1 || FunData.Filter_Degree>9) FunData.Filter_Degree = 5;
+    else if(FunData.Hold_Speed<1 || FunData.Hold_Speed>9) FunData.Hold_Speed = 5;
+    else if(FunData.Hold_Zero<1 || FunData.Hold_Zero>9) FunData.Hold_Zero = 5;
+    else if(FunData.Ow_Time<0 || FunData.Ow_Time>9) FunData.Ow_Time = 0;
+    
+    function_write();
+    HAL_Delay(10);
+}
+
+void function_reset(void)
+{
+    FunData.Mode = 3;
+    FunData.Pad_Sel = 2;
+    FunData.Stable = 2;
+    FunData.Weigh_In_Motion = 0;
+    FunData.Over_Enable = 0; 
+    FunData.Print_Form = 0; 
+    FunData.Print_Copies = 0;     
+    FunData.LineFeed = 5;     
+    FunData.Print_Enable = 1;     
+    FunData.Data_Format = 0;    
+    FunData.Wireless_Output = 0;      
+    FunData.Off_Syns = 1;    
+    FunData.Auto_Measuring = 10;    
+    FunData.Auto_Stable = 0;
+    FunData.Auto_Print = 2;    
+    FunData.Pad_Type = 0;
+    FunData.Display_Used = 0; 
+    FunData.Print_Density = 4;
+    FunData.Func_Key = 0;
+    FunData.Filter_Degree = 5;
+    FunData.Hold_Speed = 5;
+    FunData.Hold_Zero = 5;
+    FunData.Ow_Time = 0;
+    
     function_write();
     HAL_Delay(10);
 }
@@ -833,4 +953,72 @@ void cal_read(void)
         v_minimum_division[i] = eeprom_1byte_read(V_MINIMUM_DIVISION+i);
     }   
    v_multi_cal = eeprom_1byte_read(V_MULTI_CAL);
+}
+
+void Secret_function(void)
+{
+    char Set_Step;    
+  
+    Clear_Screen();
+    
+    Print_Str6x8(0xFF,10,1,"Secret Set");    
+    PrintArrow(68,7,0);
+    PrintArrow(80,7,1);
+    PrintArrow(94,7,2);
+    Print_Str6x8(0xFF,110,7,"1/1");
+  
+    Set_Step = eeprom_1byte_read(MODE);
+  
+    while(1)
+    {
+      KEYPAD_Scan();  
+        
+        if(Key.PressFlg[2])
+        {
+            Key.PressFlg[2] = 0;
+            Set_Step--;
+            if(Set_Step < 3) Set_Step = 5;
+        }
+          
+        else if(Key.PressFlg[8])
+        {
+            Key.PressFlg[8] = 0;
+            Set_Step++; 
+            if(Set_Step > 5) Set_Step = 3;
+        }
+        
+        else if(Key.PressFlg[12])
+        {
+            Clear_Screen();
+            Key.PressFlg[12] = 0;
+            return;
+        }
+        
+        else if(Key.PressFlg[13])
+        {
+            Clear_Screen();
+            Key.PressFlg[13] = 0;            
+            if(Set_Step==5)
+            {
+              function_reset();
+              mprintf(1, 2,"  - R E S E T -   ");              
+              HAL_Delay(1000);
+              mprintf(1, 2,"                  ");
+              HAL_Delay(1000);
+              mprintf(1, 2,"  - R E S E T -   ");              
+              HAL_Delay(1000);
+              mprintf(1, 2,"                  ");
+              HAL_Delay(1000);
+              Clear_Screen();
+              return;
+            }
+            FunData.Mode = Set_Step;
+            eeprom_1byte_write(MODE, FunData.Mode);
+            break;
+        }
+      
+        Print_Str6x8(Set_Step, 1, 3, " WIRELESS         ");
+        Print_Str6x8(Set_Step, 1, 4, " WIRED            ");
+        Print_Str6x8(Set_Step, 1, 5, " RESET            ");
+    }        
 }

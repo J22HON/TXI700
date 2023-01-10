@@ -325,6 +325,7 @@ void Print_Str18x40(unsigned char x_pos, unsigned char y_pos, char *ch)
         else if( (ch[j] == '-') || ((ch[j]>=0x41) && (ch[j]<=0x5A)) )
         {
             Oled_Gotoxy(x_pos, y_pos);
+            
             Print_Text18x40(x_pos, y_pos, ch[j]);
             x_pos += 22;
             j++;
@@ -472,3 +473,91 @@ int square(unsigned char value, unsigned char num)
     }
     return result;
 }
+
+void lamp_off(void)
+{
+    Stable_Lamp(OFF);
+    Hold_Lamp(OFF);
+    ZIGBEE_Lamp(OFF);
+    BLE_Lamp(OFF);
+    STATE_Lamp(0);
+    Zero_Lamp(OFF);
+}
+
+void lamp_on(void)
+{
+    Stable_Lamp(ON);
+    Hold_Lamp(ON);
+    ZIGBEE_Lamp(ON);
+    BLE_Lamp(ON);
+    STATE_Lamp(0);
+    Zero_Lamp(ON);    
+}
+
+void Zero_Lamp(uint8_t k)
+{
+    if(k) Print_Str6x8(0xFF, 1, 0, "ZERO"); 
+    else  Print_Str6x8(0xFF, 1, 0 ,"    ");
+}
+
+void ZIGBEE_Lamp(uint8_t k)
+{
+    if(k) Print_Str6x8(0xFF, 61, 0, "Z"); 
+    else  Print_Str6x8(0xFF, 61, 0 ," ");
+}
+
+void BLE_Lamp(uint8_t k)
+{
+    if(k) Print_Str6x8(0xFF, 73, 0, "B"); 
+    else  Print_Str6x8(0xFF, 73, 0 ," ");
+}
+
+void STATE_Lamp(uint8_t k)
+{    
+    if(k==A_WIM) Print_Str6x8(0xFF, 85, 0 ,"A");
+    else if(k==W_WIM) Print_Str6x8(0xFF, 85, 0 ,"W");
+    else Print_Str6x8(0xFF, 85, 0, "S"); 
+}
+
+void Hold_Lamp(uint8_t k)
+{    
+    if(k==PEAK)            Print_Str6x8(0xFF, 31, 0, "PEAK");
+    else if((k==HOLD) || (k==ON)) Print_Str6x8(0xFF, 31, 0, "HOLD");
+    else if(k==OFF)        Print_Str6x8(0xFF, 31, 0, "    ");
+}
+
+void Stable_Lamp(uint8_t k)
+{
+    uint8_t i=0;
+    
+    Oled_Gotoxy(95, 0);
+    for(i = 0; i <9 ; i++) Write_Data(Stable9x8[k][i]);    
+}
+
+void Print_Str6x8up(uint8_t x_pos, uint8_t y_pos, char *ch) // 8x6 Setting mode string display
+{ 
+   uint8_t chr = 0;
+   uint8_t i = 0;
+   uint8_t j = 0;
+   
+    while(ch[j] != '\0') 
+    {      
+        if( (ch[j]>='0') && (ch[j]<='9') ) chr = (ch[j] - 0x30); 
+        else if(ch[j]=='.') chr = 10;
+        else if(ch[j]=='%') chr = 11;
+        else if(ch[j]=='f') chr = 12;
+        else if(ch[j]=='L') chr = 13;
+        else if(ch[j]=='R') chr = 14;
+        else if(ch[j]=='r') chr = 15;
+        else if(ch[j]==' ') chr = 16;
+        else if(ch[j]=='-') chr = 17;
+ 
+        Oled_Gotoxy(x_pos, y_pos);
+        for(i = 0; i < 6; i++)      
+        {            
+            Write_Data(UPFONT6x8[chr][i]);
+        }
+        j++; 
+        x_pos += 6; 
+    } 
+} 

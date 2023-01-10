@@ -135,3 +135,111 @@ void KEYPAD_Scan(void)
     }         
 } 
 
+void Key_Clear(void)
+{
+  char i;
+  
+  for(i=0; i<14; i++)
+  {
+    Key.PressFlg[i]=0;
+  }
+}
+
+void Setting_Mode(void)
+{
+    char Set_Step = 1;
+    char Secret = 0;
+    unsigned char exit_flag = 0;    
+
+    Clear_Screen();
+    
+    while(!exit_flag)       //Menu select
+    { 
+       KEYPAD_Scan();
+       
+        if(Key.PressFlg[1])  
+        {
+          Key.PressFlg[1] = 0;
+          if(!Secret)Secret = 1;
+          else if(Secret==2)
+          {
+            Secret = 0;
+            cal_mode();
+          }
+        }
+        
+        else if(Key.PressFlg[4])  
+        {
+          Key.PressFlg[4] = 0;
+          if(Secret==1)Secret = 2;
+        }
+        
+        else if(Key.PressFlg[7])  
+        {
+          Key.PressFlg[7] = 0;
+          if(Secret==2)
+          {
+            Secret = 0;
+            Secret_function();
+          }
+        }
+        
+        else if(Key.PressFlg[2]) 
+        {
+             Key.PressFlg[2] = 0;
+             Set_Step--;
+             if(Set_Step < 1) Set_Step = 5; 
+        }
+          
+        else if (Key.PressFlg[8])
+        {
+            Key.PressFlg[8] = 0;
+            Set_Step++;
+            if(Set_Step > 5) Set_Step = 1;
+        }
+       
+        else if (Key.PressFlg[13])
+        {
+            Key.PressFlg[13] = 0;
+            switch(Set_Step)
+            {
+                case 1 :      
+                    function();
+                    Clear_Screen();
+                    break;
+                case 2 :
+                    netid_mode();
+                    Clear_Screen();
+                    break;
+                case 3 :
+                    rtc_set();
+                    Clear_Screen();
+                    break;
+                case 4 :
+                    rtc_set();
+                    Clear_Screen();
+                    break;                    
+                case 5 :
+                    Clear_Screen();
+                    return;
+            }
+        }
+              
+        else if (Key.PressFlg[12])
+        {
+            Key.PressFlg[12] = 0;
+            Clear_Screen();
+            return;
+        }
+
+        Print_Str6x8(Set_Step, 1, 1, " FUNCTION             ");
+        Print_Str6x8(Set_Step, 1, 2, " PAIRING              ");
+        Print_Str6x8(Set_Step, 1, 3, " DATE & TIME          ");
+        Print_Str6x8(Set_Step, 1, 4, " TEST                 ");
+        Print_Str6x8(Set_Step, 1, 5, " EXIT                 ");
+        PrintArrow(68,7,0);
+        PrintArrow(80,7,1);
+        PrintArrow(94,7,2);
+        Print_Str6x8(0xFF,110,7,"1/1");
+    }
+}

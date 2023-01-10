@@ -250,6 +250,13 @@ void Error_Handler(void);
 #define RXBUFFERSIZE	        200
 #define TXBUFFERSIZE		200
 
+#define TXDI_PROTOCOL           0   
+#define TXD_PROTOCOL            1   
+#define TCH_PROTOCOL            2
+
+#define W_WIM 1
+#define A_WIM 2
+
 
 struct KEY {
     char PressFlg[14];
@@ -284,75 +291,16 @@ struct FUNCTION {
     char Pad_Type;
     char Display_Used;
     char Print_Density;
+    char Func_Key;
+    char Hold_Speed;
+    char Hold_Zero;
+    char Ow_Time;
     char Auto_Zero;
+    
     char KeyBeep;
     char WimMode;
 };
 
-struct CAL {
-    long Zero[2];
-    unsigned long DpCapacity[2];
-    unsigned long CapaLimit[2];
-    unsigned long Resolution[2];
-    unsigned long TotalAnalogCount;
-    unsigned char OneDigitCount;
-    unsigned long OneDigit[2];
-    unsigned long HalfDigit[2];
-    unsigned long QuarterDigit[2];
-    unsigned long SpanWeight[2][5];
-    long SpanAdc[2][5];
-    unsigned char Division[2];
-    float CalInt[2][5];
-    unsigned char SpanCount;
-    unsigned char NowSpanCount;
-    unsigned long Gravity1;
-    unsigned long Gravity2;
-    long CalAdc[10];
-};
-
-struct PAN_ID {
-    unsigned char PanID_HI;
-    unsigned char PanID_LO;
-    unsigned char PanID_SUM;
-};
-
-struct UNIT {
-    char kg;
-    char g;
-    char lb;
-};
-
-struct STATE {
-    char CellErr;
-    char Hold;
-    char Tare;
-    char Stable[2];
-    char Zero;
-    char OverLoad;
-
-    char BatLo;
-    char BatLoLo;
-};
-
-struct AD_DATA {
-    long Zero[2];
-    long StartZero[2];
-    long ZeroBackUp[2];
-    long Tare;
-    long Hold;
-    long AvrFinal[2];
-    long AdcRaw[2];
-    long AdcRawBak[2];
-};
-
-struct WEIGHT {
-    long CurrentWt[2];
-    long RawWt[2];
-    long DisplayWt[2];
-    long Stable[2];
-    long TareWt[10];
-    long HoldWt;
-};
 
 // EEP
 void eeprom_4byte_write(unsigned long addr, unsigned long data);
@@ -382,9 +330,11 @@ void number_long(unsigned char chat);
 void function_read(void);
 void function_write(void);
 void function_reset(void);
+void function_range(void);
 void cal_read(void);
 void cal_write(void);
 void multi_gap(unsigned long comp_value1, unsigned long comp_value2, unsigned char k, unsigned char j);
+void Secret_function(void);
 
 // DISPLAY
 void Write_Command(unsigned char Command);
@@ -408,12 +358,24 @@ void Print_Text18x40(unsigned char x_pos, unsigned char y_pos, unsigned char ch)
 void Print_Num18x40(unsigned char x_pos, unsigned char y_pos, unsigned char ch);
 void Bar_Graph(unsigned long max_capa, unsigned long set_weight, unsigned long weight_value, unsigned char division);
 int square(unsigned char value, unsigned char num);
+void Print_Str6x8up(uint8_t x_pos, uint8_t y_pos, char *ch);
+void lamp_off(void);
+void lamp_on(void);
+void Zero_Lamp(uint8_t k);
+void ZIGBEE_Lamp(uint8_t k);
+void BLE_Lamp(uint8_t k);
+void STATE_Lamp(uint8_t k);
+void Hold_Lamp(uint8_t k);
+void Stable_Lamp(uint8_t k);
 
 // UART
+unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb);
 void DMA_CB_Init(DMA_CircularBuffer *cb, unsigned char * buffer ,unsigned long size,unsigned long * pDMA_Cnt );
 unsigned long DMA_Get_Cnt(DMA_CircularBuffer *cb);
 void DMA_CB_Read(DMA_CircularBuffer *cb, unsigned char* data, unsigned long cnt);
 void DMA_CB_PreRead(DMA_CircularBuffer *cb, unsigned char* data, unsigned long cnt);
+void Buf_init(char uart);
+void netid_mode(void);
 
 //ADC
 long Battery_read(void);
@@ -428,14 +390,13 @@ void normal_mode();
 // KEY
 void KEYPAD_Scan(void);
 void Setting_Mode(void);
-
+void Key_Clear(void);
 
 // RTC
 void TimeRead(void);
 void rtc_set(void);
 
 // CAL
-void gravity_mode(void);
 void cal_mode(void);
 void zero_span_set(unsigned char flag); 
 unsigned int  cal_number_long(unsigned int init_value, unsigned char chat);
@@ -443,29 +404,44 @@ unsigned int  cal_number_long(unsigned int init_value, unsigned char chat);
 // TEST
 void loadcell_test(void);
 
+// ETC
+void Memory_Input(unsigned char pick);
+void heading_edit(void);
+void bbik(void);
 
-#define FUNCTION01        1
-#define FUNCTION02        2
-#define FUNCTION03        3
-#define FUNCTION04        4
-#define FUNCTION05        5
-#define FUNCTION06        6
-#define FUNCTION07        7
-#define FUNCTION08        8
-#define FUNCTION09        9
-#define FUNCTION10        10
-#define FUNCTION11        11
-#define FUNCTION12        12
-#define FUNCTION13        13
-#define FUNCTION14        14
-#define FUNCTION15        15
-#define FUNCTION16        16
-#define FUNCTION17        17
-#define FUNCTION18        18
-#define FUNCTION19        19
-#define FUNCTION20        20
+#define OFF             0
+#define ON              1
+#define PEAK            2
+#define PEAK_OFF        99
+#define HOLD            3
+
+#define CAR             0
+#define ITEM            1        
+
+#define PAD_SEL           1
+#define STABLE            2
+#define WEIGH_IN_MOTION   3
+#define OVER_ENABLE       4
+#define PRINT_FORM        5
+#define PRINT_COPIES      6
+#define LINEFEED          7
+#define PRINT_ENABLE      8
+#define DATA_FORMAT       9
+#define WIRELESS_OUTPUT   10
+#define OFF_SYNS          11
+#define AUTO_MEASURING    12
+#define AUTO_STABLE       13
+#define AUTO_PRINT        14
+#define PAD_TYPE          15
+#define DISPLAY_USED      16
+#define PRINT_DENSITY     17
+#define FUNC_KEY          18
+#define FILTER_DEGREE     19
+#define AUTO_ZERO         20
+#define HOLD_SPEED        21
+#define HOLD_ZERO         22
+#define OW_TIME           23
 #define MODE              99
-
 
 #define V_RES_FACTOR             100  // 4*5*2
 #define V_ADC_ORG                140  // 4*5*2
