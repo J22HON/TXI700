@@ -66,14 +66,32 @@ extern DMA_HandleTypeDef hdma_usart2_tx;
 extern DMA_HandleTypeDef hdma_usart3_rx;
 extern DMA_HandleTypeDef hdma_usart3_tx;
 
+extern UART_HandleTypeDef hlpuart1;
+extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
+  
+extern struct FUNCTION FunData;
+
 extern unsigned char         ShortBeep,
                               Time01Start,
                               Time02Start,
-                              PowerOn;
+                              PowerOn,
+                              step_ch[2],
+                              ErrorFlg,
+                              Sleep[16],
+                              chck_R_L_flag,
+                              difr_flag;
+
+extern unsigned short        s_delay;
 
 extern unsigned long         Time01Count,
                               Time02Count,
-                              ShortBeepCount;
+                              ShortBeepCount,
+                              chck_R_L_t,
+                              chck_R_L_tm,
+                              inmtn_lmt_tm;
+
+extern unsigned int          ErrorFlgCount;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -218,6 +236,53 @@ void SysTick_Handler(void)
     ShortBeepCount++;
     if(ShortBeepCount >= 100) { BUZZER_OFF; ShortBeepCount = 0; ShortBeep = 0;}
     else BUZZER_ON;
+  }
+  
+  if(ErrorFlg) ErrorFlgCount++;
+  if(ErrorFlgCount> 4000)
+  {
+      ErrorFlg = 0;
+      ErrorFlgCount = 0;
+  }
+  
+  if(ErrorFlg) ErrorFlgCount++;
+  if(ErrorFlgCount> 4000)
+  {
+      ErrorFlg = 0;
+      ErrorFlgCount = 0;
+  }
+  
+  s_delay++;
+  if(s_delay > 20000) s_delay=0;
+  
+  if(FunData.Weigh_In_Motion==2)
+  {
+    if((FunData.Pad_Type == TXD) || (Sleep[0]<2 && Sleep[1]<2 && Sleep[2]<2 && Sleep[3]<2 && Sleep[4]<2 && Sleep[5]<2 && Sleep[6]<2 && Sleep[7]<2 && Sleep[8]<2 && Sleep[9]<2 && Sleep[10]<2 && Sleep[11]<2 && Sleep[12]<2 && Sleep[13]<2 && Sleep[14]<2 && Sleep[15]<2))  //ALL PADS NO SLEEP
+    {
+      if(step_ch[0] || step_ch[1] )							
+      {
+          if( step_ch[0] == step_ch[1] ) chck_R_L_tm=0;       
+          else 						      
+          {
+              chck_R_L_tm++;                                  
+              if(chck_R_L_tm>chck_R_L_t) chck_R_L_flag=1;                      
+          }
+      }
+        else 							
+        {	
+            difr_flag=0;
+            inmtn_lmt_tm=0;					
+            chck_R_L_tm=0;
+        }
+        inmtn_lmt_tm++;
+        if(inmtn_lmt_tm > 9000000) inmtn_lmt_tm=7000000; 
+    }
+    else
+    {
+      difr_flag=0;
+      inmtn_lmt_tm=0;										
+      chck_R_L_tm=0;
+    }    
   }
   
   if(!PSW_READ && PowerOn)

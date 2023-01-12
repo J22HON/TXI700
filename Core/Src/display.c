@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+ extern struct FUNCTION FunData;
+
 void Write_Command(unsigned char Command)
 {
     unsigned char i=0;
@@ -474,26 +476,6 @@ int square(unsigned char value, unsigned char num)
     return result;
 }
 
-void lamp_off(void)
-{
-    Stable_Lamp(OFF);
-    Hold_Lamp(OFF);
-    ZIGBEE_Lamp(OFF);
-    BLE_Lamp(OFF);
-    STATE_Lamp(0);
-    Zero_Lamp(OFF);
-}
-
-void lamp_on(void)
-{
-    Stable_Lamp(ON);
-    Hold_Lamp(ON);
-    ZIGBEE_Lamp(ON);
-    BLE_Lamp(ON);
-    STATE_Lamp(0);
-    Zero_Lamp(ON);    
-}
-
 void Zero_Lamp(uint8_t k)
 {
     if(k) Print_Str6x8(0xFF, 1, 0, "ZERO"); 
@@ -514,16 +496,20 @@ void BLE_Lamp(uint8_t k)
 
 void STATE_Lamp(uint8_t k)
 {    
-    if(k==A_WIM) Print_Str6x8(0xFF, 85, 0 ,"A");
-    else if(k==W_WIM) Print_Str6x8(0xFF, 85, 0 ,"W");
-    else Print_Str6x8(0xFF, 85, 0, "S"); 
+  if(FunData.Pad_Sel == 2)
+  {
+    if(k==2) Print_Str6x8(0xFF, 85, 0 ,"A");
+    else if(k==1) Print_Str6x8(0xFF, 85, 0 ,"W");
+    else if(k==0) Print_Str6x8(0xFF, 85, 0, "S"); 
+  }
+  else Print_Str6x8(0xFF, 85, 0 ," ");
 }
 
 void Hold_Lamp(uint8_t k)
 {    
-    if(k==PEAK)            Print_Str6x8(0xFF, 31, 0, "PEAK");
-    else if((k==HOLD) || (k==ON)) Print_Str6x8(0xFF, 31, 0, "HOLD");
-    else if(k==OFF)        Print_Str6x8(0xFF, 31, 0, "    ");
+    if(k==99)            Print_Str6x8(0xFF, 31, 0, "PEAK");
+    else if((k==3) || (k==0)) Print_Str6x8(0xFF, 31, 0, "HOLD");
+    else if(k==0)        Print_Str6x8(0xFF, 31, 0, "    ");
 }
 
 void Stable_Lamp(uint8_t k)
@@ -532,6 +518,13 @@ void Stable_Lamp(uint8_t k)
     
     Oled_Gotoxy(95, 0);
     for(i = 0; i <9 ; i++) Write_Data(Stable9x8[k][i]);    
+}
+
+void SUM_PRT_Lamp(uint8_t k)
+{
+    if(k==1)       mprintf(37, 1,"SUM");
+    else if(k==2)  mprintf(37, 1,"PRT");
+    else if(k==0)  mprintf(37, 1,"   ");
 }
 
 void Print_Str6x8up(uint8_t x_pos, uint8_t y_pos, char *ch) // 8x6 Setting mode string display

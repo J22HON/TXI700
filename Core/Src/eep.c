@@ -17,7 +17,8 @@ extern struct FUNCTION FunData;
 
  extern unsigned char             v_ad_flag,
                                    v_multi_cal,
-                                   v_minimum_division[2];  
+                                   v_minimum_division[2],
+                                   p_head[120];  
 
  extern unsigned long             v_maximum_capacity[2],
                                    v_e_resolution[2],
@@ -456,7 +457,7 @@ RESET :
           Key.PressFlg[13] = 0;
           if(!value)
           {
-            function_write();
+            function_read();
             function_range();
             Clear_Screen();
             break;
@@ -501,7 +502,7 @@ RESET :
       
       else if(FunData.Mode == 4)
       {
-        if(value<16) value++;
+        if(value<18) value++;
         else value = 0;
         goto RESET;
       }
@@ -603,75 +604,85 @@ void title_Function(unsigned char set_num)
     switch(set_num)
     {
         case 1:
-            mprintf(1, 2,"  Adjustment          ");
-            mprintf(1, 2,"  The Speed of        ");
-            mprintf(1, 4,"  Weight Change       ");
+            mprintf(1, 2,"  Number of Scales to");
+            mprintf(1, 3,"  be Linked Wireless ");
             break;
         
         case 2:
-            mprintf(1, 2,"  Stable Condition   ");
+            mprintf(1, 2,"  Stable Condition  ");
             break;
 
         case 3:
+            mprintf(1, 2,"  Weigh-In-Motion   ");
+            break;
+            
+        case 4:
+            mprintf(1, 2,"  Excess Enable     ");
+            break;
+
+        case 5:
+            mprintf(1, 2,"  Print Format      ");
+            break;
+
+        case 6:
+            mprintf(1, 2,"  Number of Copies  ");
+            break;
+
+        case 7:
+            mprintf(1, 2,"  Line Feed         ");
+            break;
+            
+        case 8:
+            mprintf(1, 2,"  Enable Printer    ");
+            break;          
+            
+        case 9:
+            mprintf(1, 2,"  Data Format       ");  
+            break;  
+            
+        case 10:
+            mprintf(1, 2,"  External Wireless ");
+            mprintf(1, 3,"  Output            ");
+            break;         
+        
+        case 11:
             mprintf(1, 2,"  Auto Zero          ");
             mprintf(1, 3,"  Condition Set      ");
             break;
             
-        case 4:
-            mprintf(1, 2,"  Weigh-In-Motion    ");
-            break;
-
-        case 5:
-            mprintf(1, 2,"  Excess Weight     ");
-            break;
-
-        case 6:
-            mprintf(1, 2,"  Auto Weighing     ");
-            mprintf(1, 3,"  Stable Time       ");            
-            break;
-
-        case 7:
-            mprintf(1, 2,"  Auto Print Time   ");
-            break;
-            
-        case 8:
-            mprintf(1, 2,"  Print Format      ");
-            break;          
-            
-        case 9:
-            mprintf(1, 2,"  Number of Copies  ");
-            break;  
-            
-        case 10:
-            mprintf(1, 2,"  Line Feed         ");
-            break;                   
-            
-        case 11:
-            mprintf(1, 2,"  Enable Printer    ");
-            break;    
-            
         case 12:
-            mprintf(1, 2,"  Data Format       ");      
+            mprintf(1, 2,"  Automatic Measuring");
+            mprintf(1, 3,"  (A-WIM)            ");       
             break;    
             
         case 13:
-            mprintf(1, 2,"  External Wireless ");
-            mprintf(1, 3,"  Output            ");
+            mprintf(1, 2,"  Auto Weighing      ");
+            mprintf(1, 3,"  Stable Time        ");
             break;          
             
         case 14:
+            mprintf(1, 2,"  Auto Print Time    ");
+            break;       
+            
+        case 15:
             mprintf(1, 2,"  Adjustment        ");
             mprintf(1, 3,"  The Hold Speed    ");
             break;   
             
-        case 15:
+        case 16:
             mprintf(1, 2,"  Initialization    ");
             mprintf(1, 3,"  Hold Weight       ");
             break;  
             
-        case 16:
+        case 17:
             mprintf(1, 2,"  Print density      ");
             break;  
+        
+        case 18:
+            mprintf(1, 2,"  Adjustment          ");
+            mprintf(1, 2,"  The Speed of        ");
+            mprintf(1, 4,"  Weight Change       ");
+            break;            
             
         default:
             break;          
@@ -710,22 +721,24 @@ void number_long(unsigned char chat1)
   
   else if(FunData.Mode==4)
   {
-    if(chat1==1) value = eeprom_1byte_read(FILTER_DEGREE); 
+    if(chat1==1) value = eeprom_1byte_read(PAD_SEL);    
     else if(chat1==2) value = eeprom_1byte_read(STABLE); 
-    else if(chat1==3) value = eeprom_1byte_read(AUTO_ZERO); 
-    else if(chat1==4) value = eeprom_1byte_read(WEIGH_IN_MOTION);
-    else if(chat1==5) value = eeprom_1byte_read(OVER_ENABLE);
-    else if(chat1==6) value = eeprom_1byte_read(OW_TIME);
-    else if(chat1==7) value = eeprom_1byte_read(AUTO_PRINT);
-    else if(chat1==8) value = eeprom_1byte_read(PRINT_FORM);
-    else if(chat1==9) value = eeprom_1byte_read(PRINT_COPIES);
-    else if(chat1==10) value = eeprom_1byte_read(LINEFEED);
-    else if(chat1==11) value = eeprom_1byte_read(PRINT_ENABLE);
-    else if(chat1==12) value = eeprom_1byte_read(DATA_FORMAT);
-    else if(chat1==13) value = eeprom_1byte_read(WIRELESS_OUTPUT);
-    else if(chat1==14) value = eeprom_1byte_read(HOLD_SPEED);
-    else if(chat1==15) value = eeprom_1byte_read(HOLD_ZERO);
-    else if(chat1==16) value = eeprom_1byte_read(PRINT_DENSITY);
+    else if(chat1==3) value = eeprom_1byte_read(WEIGH_IN_MOTION); 
+    else if(chat1==4) value = eeprom_1byte_read(OVER_ENABLE);
+    else if(chat1==5) value = eeprom_1byte_read(PRINT_FORM);
+    else if(chat1==6) value = eeprom_1byte_read(PRINT_COPIES);
+    else if(chat1==7) value = eeprom_1byte_read(LINEFEED);
+    else if(chat1==8) value = eeprom_1byte_read(PRINT_ENABLE);
+    else if(chat1==9) value = eeprom_1byte_read(DATA_FORMAT);
+    else if(chat1==10) value = eeprom_1byte_read(WIRELESS_OUTPUT);
+    else if(chat1==11) value = eeprom_1byte_read(AUTO_ZERO); 
+    else if(chat1==12) value = eeprom_1byte_read(AUTO_MEASURING);
+    else if(chat1==13) value = eeprom_1byte_read(AUTO_STABLE);
+    else if(chat1==14) value = eeprom_1byte_read(AUTO_PRINT);
+    else if(chat1==15) value = eeprom_1byte_read(HOLD_SPEED);
+    else if(chat1==16) value = eeprom_1byte_read(HOLD_ZERO);
+    else if(chat1==17) value = eeprom_1byte_read(PRINT_DENSITY);
+    else if(chat1==18) value = eeprom_1byte_read(FILTER_DEGREE); 
   }
   
   while(1)
@@ -746,6 +759,50 @@ void number_long(unsigned char chat1)
       else if(Key.PressFlg[13]) 
       { 
         Key.PressFlg[13] = 0;  
+        
+        if(FunData.Mode==3)
+        {
+          if(chat1==1) eeprom_1byte_write(PAD_SEL ,value); 
+          else if(chat1==2) eeprom_1byte_write(STABLE ,value); 
+          else if(chat1==3) eeprom_1byte_write(WEIGH_IN_MOTION ,value); 
+          else if(chat1==4) eeprom_1byte_write(OVER_ENABLE ,value);
+          else if(chat1==5) eeprom_1byte_write(PRINT_FORM ,value);
+          else if(chat1==6) eeprom_1byte_write(PRINT_COPIES ,value);
+          else if(chat1==7) eeprom_1byte_write(LINEFEED ,value);
+          else if(chat1==8) eeprom_1byte_write(PRINT_ENABLE ,value);
+          else if(chat1==9) eeprom_1byte_write(DATA_FORMAT ,value);
+          else if(chat1==10) eeprom_1byte_write(WIRELESS_OUTPUT ,value);
+          else if(chat1==11) eeprom_1byte_write(OFF_SYNS ,value);
+          else if(chat1==12) eeprom_1byte_write(AUTO_MEASURING ,value);
+          else if(chat1==13) eeprom_1byte_write(AUTO_STABLE ,value);
+          else if(chat1==14) eeprom_1byte_write(AUTO_PRINT ,value);
+          else if(chat1==15) eeprom_1byte_write(PAD_TYPE ,value);
+          else if(chat1==16) eeprom_1byte_write(DISPLAY_USED ,value);
+          else if(chat1==17) eeprom_1byte_write(PRINT_DENSITY ,value);
+          else if(chat1==18) eeprom_1byte_write(FUNC_KEY ,value);
+        }
+        
+        else if(FunData.Mode==4)
+        {
+          if(chat1==1) eeprom_1byte_write(PAD_SEL ,value);    
+          else if(chat1==2) eeprom_1byte_write(STABLE ,value); 
+          else if(chat1==3) eeprom_1byte_write(WEIGH_IN_MOTION ,value); 
+          else if(chat1==4) eeprom_1byte_write(OVER_ENABLE ,value);
+          else if(chat1==5) eeprom_1byte_write(PRINT_FORM ,value);
+          else if(chat1==6) eeprom_1byte_write(PRINT_COPIES ,value);
+          else if(chat1==7) eeprom_1byte_write(LINEFEED ,value);
+          else if(chat1==8) eeprom_1byte_write(PRINT_ENABLE ,value);
+          else if(chat1==9) eeprom_1byte_write(DATA_FORMAT ,value);
+          else if(chat1==10) eeprom_1byte_write(WIRELESS_OUTPUT ,value);
+          else if(chat1==11) eeprom_1byte_write(AUTO_ZERO ,value); 
+          else if(chat1==12) eeprom_1byte_write(AUTO_MEASURING ,value);
+          else if(chat1==13) eeprom_1byte_write(AUTO_STABLE ,value);
+          else if(chat1==14) eeprom_1byte_write(AUTO_PRINT ,value);
+          else if(chat1==15) eeprom_1byte_write(HOLD_SPEED ,value);
+          else if(chat1==16) eeprom_1byte_write(HOLD_ZERO ,value);
+          else if(chat1==17) eeprom_1byte_write(PRINT_DENSITY ,value);
+          else if(chat1==18) eeprom_1byte_write(FILTER_DEGREE ,value); 
+        }
         break; 
       }
            
@@ -759,34 +816,35 @@ void number_long(unsigned char chat1)
       
       if(FunData.Mode == 3)
       {
-        if( chat1 ==1 && ( value < 0 || value > 16)) value = 0;
-        else if( (chat1==2 || chat1==5 || chat1==7 || chat1==17) && (value > 9 || value < 0)) value = 0;
-        else if( (chat1==3 || chat1==4 || chat1==15) && (value > 2 || value < 0)) value = 0;
+        if( chat1 ==1 && (value > 16))value = 0;
+        else if( (chat1==2 || chat1==7 || chat1==17) && (value > 9))value = 0;
+        else if( (chat1==3 || chat1==4 || chat1==15) && (value > 2))value = 0;
         else if( (chat1==6 || chat1==8 || chat1==9 || chat1==10 || chat1==11 || 
-                  chat1==13 || chat1==14 || chat1==16 || chat1==18) && (value > 1 || value < 0)) value = 0;
-        else if( chat1==12 && (value > 30 || value < 5)) value = 0;          
+                  chat1==13 || chat1==14 || chat1==16 || chat1==18) && (value > 1))value = 0;
+        else if( chat1==5 && (value > 6))value = 0;
+        else if( chat1==12 && (value > 30 || value < 5))value = 0;          
       }
       
       else if(FunData.Mode == 4)
       {
-        if( (chat1==1 || chat1==2 || chat1==3 || chat1 == 6 || chat1 == 7 || chat1 == 8 ||
-             chat1==10 || chat1 ==14 || chat1==15 || chat1==16) && ( value < 0 || value > 9)) value = 0;
-        else if ( (chat1==4 || chat1 == 9 || chat1==11 || chat1==12 || chat1==13) && ( value < 0 || value > 1)) value = 0;
-        else if( (chat1==5 ) && (value > 2 || value < 0)) value = 0;        
+        if( (chat1==2 || chat1==7 || chat1==11 || chat1==13 || chat1==14 || chat1==15 
+                      || chat1==16 || chat1==17 || chat1 ==18) && (value > 9))value = 0;
+        else if( (chat1==6 || chat1==8 || chat1==9 || chat1==10) && (value > 1))value = 0;
+        else if( (chat1==1 || chat1==4 || chat1==3) && (value > 2))value = 0;  
+        else if(  chat1==5 && (value > 6))value = 0;
+        else if(  chat1==12 && (value > 30 || value < 5))value = 0;
       }
             
       key_set = 0;                     
             
       if(bound_count <= 800)
       {
-        if(chat1==1 || chat1==12)      mprintf(1, 5,"         %02d", value);
-        else                         mprintf(1, 5,"          %d ", value);
+        mprintf(1, 5,"          %d", value);
         bound_count++;
       }
       else if(bound_count <= 1200)
       {
-        if(chat1==1 || chat1==12)      mprintf(1, 5,"             ");
-        else                         mprintf(1, 5,"             ");
+        mprintf(1, 5,"              ");
         bound_count++;
       }
       else bound_count = 0;
@@ -795,6 +853,8 @@ void number_long(unsigned char chat1)
 
 void function_read(void)
 {    
+  unsigned char i;
+  
     FunData.Mode = eeprom_1byte_read(MODE);
     FunData.Pad_Sel = eeprom_1byte_read(PAD_SEL);
     FunData.Stable = eeprom_1byte_read(STABLE);    
@@ -817,8 +877,9 @@ void function_read(void)
     FunData.Filter_Degree = eeprom_1byte_read(FILTER_DEGREE);
     FunData.Hold_Speed = eeprom_1byte_read(HOLD_SPEED);
     FunData.Hold_Zero = eeprom_1byte_read(HOLD_ZERO);
-    FunData.Ow_Time = eeprom_1byte_read(OW_TIME);
     FunData.KeyBeep = 1;
+    
+    for(i=0; i<20; i++)p_head[i] = eeprom_1byte_read(P_HEAD);
 }
 
 void function_write(void)
@@ -845,34 +906,32 @@ void function_write(void)
     eeprom_1byte_write(FILTER_DEGREE, FunData.Filter_Degree);  
     eeprom_1byte_write(HOLD_SPEED, FunData.Hold_Speed);  
     eeprom_1byte_write(HOLD_ZERO, FunData.Hold_Zero);  
-    eeprom_1byte_write(OW_TIME, FunData.Ow_Time); 
 }
 
 void function_range(void)
 {
-          if(FunData.Mode<3 || FunData.Mode>4) FunData.Mode = 3;
-    else if(FunData.Pad_Sel<1 || FunData.Pad_Sel>16) FunData.Pad_Sel = 2;
-    else if(FunData.Stable<1 || FunData.Stable>9) FunData.Stable = 2;
-    else if(FunData.Weigh_In_Motion<0 || FunData.Weigh_In_Motion>2) FunData.Weigh_In_Motion = 0;
-    else if(FunData.Over_Enable<0 || FunData.Over_Enable>2) FunData.Over_Enable = 0; 
-    else if(FunData.Print_Form<0 || FunData.Print_Form>9) FunData.Print_Form = 0; 
-    else if(FunData.Print_Copies<0 || FunData.Print_Copies>1) FunData.Print_Copies = 0;     
-    else if(FunData.LineFeed<0 || FunData.LineFeed>9) FunData.LineFeed = 5;     
-    else if(FunData.Print_Enable<0 || FunData.Print_Enable>1) FunData.Print_Enable = 1;     
-    else if(FunData.Data_Format<0 || FunData.Data_Format>1) FunData.Data_Format = 0;    
-    else if(FunData.Wireless_Output<0 || FunData.Wireless_Output>1) FunData.Wireless_Output = 0;      
-    else if(FunData.Off_Syns<0 || FunData.Off_Syns>1) FunData.Off_Syns = 1;    
-    else if(FunData.Auto_Measuring<5 || FunData.Auto_Measuring>30) FunData.Auto_Measuring = 10;    
-    else if(FunData.Auto_Stable<0 || FunData.Auto_Stable>9) FunData.Auto_Stable = 0;
-    else if(FunData.Auto_Print<0 || FunData.Auto_Print>9) FunData.Auto_Print = 2;    
-    else if(FunData.Pad_Type<0 || FunData.Pad_Type>2) FunData.Pad_Type = 0;
-    else if(FunData.Display_Used<0 || FunData.Display_Used>1) FunData.Display_Used = 0; 
-    else if(FunData.Print_Density<0 || FunData.Print_Density>9) FunData.Print_Density = 4;
-    else if(FunData.Func_Key<0 || FunData.Func_Key>1) FunData.Func_Key = 0;
-    else if(FunData.Filter_Degree<1 || FunData.Filter_Degree>9) FunData.Filter_Degree = 5;
-    else if(FunData.Hold_Speed<1 || FunData.Hold_Speed>9) FunData.Hold_Speed = 5;
-    else if(FunData.Hold_Zero<1 || FunData.Hold_Zero>9) FunData.Hold_Zero = 5;
-    else if(FunData.Ow_Time<0 || FunData.Ow_Time>9) FunData.Ow_Time = 0;
+   if(FunData.Mode || FunData.Mode!=4) FunData.Mode = 3;
+   if(FunData.Pad_Sel<1 || FunData.Pad_Sel>16) FunData.Pad_Sel = 2;
+   if(FunData.Stable<1 || FunData.Stable>9) FunData.Stable = 2;
+   if(FunData.Weigh_In_Motion>2) FunData.Weigh_In_Motion = 0;
+   if(FunData.Over_Enable>2) FunData.Over_Enable = 0; 
+   if(FunData.Print_Form>9) FunData.Print_Form = 0; 
+   if(FunData.Print_Copies>1) FunData.Print_Copies = 0;     
+   if(FunData.LineFeed>9) FunData.LineFeed = 5;     
+   if(FunData.Print_Enable>1) FunData.Print_Enable = 1;     
+   if(FunData.Data_Format>1) FunData.Data_Format = 0;    
+   if(FunData.Wireless_Output>1) FunData.Wireless_Output = 0;      
+   if(FunData.Off_Syns>1) FunData.Off_Syns = 1;    
+   if(FunData.Auto_Measuring<5 || FunData.Auto_Measuring>30) FunData.Auto_Measuring = 10;    
+   if(FunData.Auto_Stable>9) FunData.Auto_Stable = 0;
+   if(FunData.Auto_Print>9) FunData.Auto_Print = 2;    
+   if(FunData.Pad_Type>2) FunData.Pad_Type = 0;
+   if(FunData.Display_Used>1) FunData.Display_Used = 0; 
+   if(FunData.Print_Density>9) FunData.Print_Density = 4;
+   if(FunData.Func_Key>1) FunData.Func_Key = 0;
+   if(FunData.Filter_Degree<1 || FunData.Filter_Degree>9) FunData.Filter_Degree = 5;
+   if(FunData.Hold_Speed<1 || FunData.Hold_Speed>9) FunData.Hold_Speed = 5;
+   if(FunData.Hold_Zero<1 || FunData.Hold_Zero>9) FunData.Hold_Zero = 5;
     
     function_write();
     HAL_Delay(10);
@@ -902,7 +961,6 @@ void function_reset(void)
     FunData.Filter_Degree = 5;
     FunData.Hold_Speed = 5;
     FunData.Hold_Zero = 5;
-    FunData.Ow_Time = 0;
     
     function_write();
     HAL_Delay(10);

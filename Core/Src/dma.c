@@ -19,6 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "dma.h"
+#include "main.h"
 
 /* USER CODE BEGIN 0 */
 

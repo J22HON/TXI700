@@ -24,7 +24,21 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
+extern DMA_HandleTypeDef hdma_lpuart_rx;
 
+extern DMA_HandleTypeDef hdma_lpuart_tx;
+
+extern DMA_HandleTypeDef hdma_usart2_tx;
+
+extern DMA_HandleTypeDef hdma_usart2_rx;
+
+extern DMA_HandleTypeDef hdma_usart3_rx;
+
+extern DMA_HandleTypeDef hdma_usart3_tx;
+
+extern UART_HandleTypeDef hlpuart1;
+extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
 
@@ -56,7 +70,7 @@
 /* USER CODE END ExternalFunctions */
 
 /* USER CODE BEGIN 0 */
-
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE END 0 */
 /**
   * Initializes the Global MSP.

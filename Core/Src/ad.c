@@ -6,8 +6,7 @@
 #include <string.h>
 
  extern struct FUNCTION FunData;
-
-
+ extern struct KEY Key;
 
  extern unsigned char             ShortBeep,
                                    Time01Start,
@@ -24,7 +23,8 @@
                                    imsi,
                                    v_multi_cal,
                                    v_cal_flag,
-                                   v_minimum_division[2];                                                                                                 
+                                   v_minimum_division[2],
+                                   cal_confirm;                                                                                                 
   
  extern unsigned long             Time01Count,
                                    Time02Count,
@@ -36,7 +36,9 @@
                                    v_adc_org[2][5],
                                    diff[2],
                                    diff1[2],
-                                   v_e_resolution[2];
+                                   v_zero[2],
+                                   v_e_resolution[2],
+                                   v_over_weight;
                                             
  extern unsigned short           zero_count[2],
                                   v_gravity_factor1,
@@ -191,130 +193,103 @@ void multi_gap(unsigned long comp_value1, unsigned long comp_value2, unsigned ch
                   v_adc_org[j][p] = v_adc_org[j][p]-gap;
   }
 }
-
-void normal_mode(void)
+ 
+void Over_Weight(void)
 {
-  unsigned char i;
+  char key_set = 0;
+  char key_push = 0;
+  unsigned int bound_count = 0;  
   
-  for(i=0; i<8; i++) 
-  { 
-      stable_flag[i]=0;
-      count[i]=0; 
-      over_flag[i]=0;
-  }
+  Clear_Screen();  
+  mprintf(10, 2,"  OVER WEIGHT    ");  
+  mprintf(10, 3,"  MAX : 65,000 KG");
   
-  v_az_scope = FunData.Auto_Zero * 20;
-  imsi = v_multi_cal;
+  v_over_weight = eeprom_2byte_read(V_OVER_WEIGHT);
   
-  KEYPAD_Scan();
+  while(1)
+  {
+      KEYPAD_Scan();        
+              
+      if(Key.PressFlg[0])       { Key.PressFlg[0] = 0; key_set = 0; key_push = 1;}
+      else if(Key.PressFlg[1])  { Key.PressFlg[1] = 0; key_set = 1; key_push = 1;}
+      else if(Key.PressFlg[2])  { Key.PressFlg[2] = 0; key_set = 2; key_push = 1;}
+      else if(Key.PressFlg[3])  { Key.PressFlg[3] = 0; key_set = 3; key_push = 1;}
+      else if(Key.PressFlg[4])  { Key.PressFlg[4] = 0; key_set = 4; key_push = 1;}
+      else if(Key.PressFlg[5])  { Key.PressFlg[5] = 0; key_set = 5; key_push = 1;}
+      else if(Key.PressFlg[6])  { Key.PressFlg[6] = 0; key_set = 6; key_push = 1;}
+      else if(Key.PressFlg[7])  { Key.PressFlg[7] = 0; key_set = 7; key_push = 1;}
+      else if(Key.PressFlg[8])  { Key.PressFlg[8] = 0; key_set = 8; key_push = 1;}
+      else if(Key.PressFlg[9])  { Key.PressFlg[9] = 0; key_set = 9; key_push = 1;}
+      else if(Key.PressFlg[12]) { Key.PressFlg[12] = 0; key_set = 0; v_over_weight = 0; }
+      else if(Key.PressFlg[13]) 
+      { 
+        Key.PressFlg[13] = 0; 
+        eeprom_2byte_write(V_OVER_WEIGHT, v_over_weight); 
+        Clear_Screen();
+        HAL_Delay(100);
+        break; 
+      }
+           
+      if( (!v_over_weight) && key_push ) {v_over_weight += key_set; key_push = 0;}
+      else if(key_push == 1)
+      {
+          v_over_weight *= 10;
+          v_over_weight += key_set;
+          key_push = 0;
+      }           
+      key_set = 0;                     
+      
+      if(v_over_weight>65000)v_over_weight=0;
+      
+      if(bound_count <= 800)
+      {
+        mprintf(10, 5," WEIGHT : %d", v_over_weight);        
+        bound_count++;
+      }
+      else if(bound_count <= 1200)
+      {
+        mprintf(10, 5," WEIGHT :           ");
+        bound_count++;
+      }
+      else bound_count = 0;
+  }  
+}
+
+void LoadCell_Cheak(void)
+{
+  unsigned char i=0, pass_start=0;
   
-  //READ A/D
-  for(i=0; i<2; i++)
-  {         
-    do v_temp_long = read_filtered_adc(i); while(!v_ad_flag);
+RETRY:
+  
+  if(FunData.Mode == 4)
+  {
+    for(i=0; i<2; i++)
+    {
+      do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);
+
+      if(( v_temp_long < 100) || (v_temp_long > 1000000l))	// LOAD CELL ERROR
+      { 
+        Battery_check(); 
+        mprintf(1, 3, " C H 0 2 ");
+        pass_start=0; 
+        HAL_Delay(700); 
+      } 
+      else
+      {
+        pass_start++;
+        multi_gap(v_temp_long, v_zero[i], 1, i);
+        do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);      
+        v_adc_org[i][0] = (unsigned long) ( ((float) v_temp_long) * v_res_factor[i][0] );
+      }
+    }
     
-    v_adc1_buf = (long) ( ((float) v_temp_long) * v_res_factor[i][0] );
-
-    if(imsi==5)
-    {
-      if(v_temp_long >= v_adc_org[i][1]) 
-      { 
-        v_adc1_buf = (long)((float) v_adc_org[i][1] * v_res_factor[i][0]) 
-                   + (long)((float)(v_temp_long - v_adc_org[i][1]) * v_res_factor[i][1]);    	 
-
-        if(v_temp_long >= v_adc_org[i][2])
-        { 
-          v_adc1_buf = (long)((float) v_adc_org[i][1] * v_res_factor[i][0]) 
-                     + (long)((float)(v_adc_org[i][2] - v_adc_org[i][1]) * v_res_factor[i][1]) 
-                     + (long)((float)(    v_temp_long - v_adc_org[i][2]) * v_res_factor[i][2]); 
-                             
-          if(v_temp_long >= v_adc_org[i][3]) 
-          { 
-            v_adc1_buf = (long)((float) v_adc_org[i][1] * v_res_factor[i][0]) 
-                       + (long)((float)(v_adc_org[i][2] - v_adc_org[i][1]) * v_res_factor[i][1]) 
-                       + (long)((float)(v_adc_org[i][3] - v_adc_org[i][2]) * v_res_factor[i][2]) 
-                       + (long)((float)(    v_temp_long - v_adc_org[i][3]) * v_res_factor[i][3]); 
-                             
-            if(v_temp_long >= v_adc_org[i][4])
-            { 
-                    v_adc1_buf = (long)((float) v_adc_org[i][1] * v_res_factor[i][0]) 
-                               + (long)((float)(v_adc_org[i][2] - v_adc_org[i][1]) * v_res_factor[i][1]) 
-                               + (long)((float)(v_adc_org[i][3] - v_adc_org[i][2]) * v_res_factor[i][2]) 
-                               + (long)((float)(v_adc_org[i][4] - v_adc_org[i][3]) * v_res_factor[i][3]) 
-                               + (long)((float)(    v_temp_long - v_adc_org[i][4]) * v_res_factor[i][4]); 
-            }
-          }
-        }
-      }
-    }
-    else if(imsi==2)
-    {
-      if(v_temp_long >= v_adc_org[i][1]) 
-      { 
-        v_adc1_buf = (long)((float)v_adc_org[i][1]*v_res_factor[i][0]) 
-                   + (long)((float)(v_temp_long - v_adc_org[i][1]) * v_res_factor[i][1]);   	 
-      }
-    }
-
-    //********************* STABLE CHECK ***************************/
-    if ( v_adc1_buf > v_adc_org[i][0]) 	diff1[i] = v_adc1_buf      - v_adc_org[i][0];
-    else                               	diff1[i] = v_adc_org[i][0] - v_adc1_buf;
-
-    if ( v_adc1_buf > prev_adc1[i] ) 	diff[i]  = v_adc1_buf   - prev_adc1[i];
-    else                             	diff[i]  = prev_adc1[i] - v_adc1_buf;
-
-    if(!v_cal_flag)
-    {	
-      if(FunData.Auto_Zero)
+    if(cal_confirm==0) 
+    { 
+      if(pass_start!=2) 
       {
-        if ( (diff1[i]<=v_az_scope) && stable_flag[i] )
-        {
-          if( zero_count[i] > 1000 )
-          {
-                  zero_count[i] = 0;
-                  multi_gap(v_adc1_buf, v_adc_org[i][0], 0, i);
-                  v_adc_org[i][0]=v_adc1_buf;
-          } 
-        }
-        else  zero_count[i]=0;       
+          pass_start=0; 
+          goto RETRY; 
       }
     }
-          
-    if(diff[i] > 9) count[i] = 1;
-          
-    if(count[i] < (2+FunData.Stable))
-    {
-      if(diff[i] <= 9) count[i]++; 
-      else                     
-      { 
-        stable_flag[i]=0; 
-        count[i]=1;
-      }
-    }
-    else
-    {
-      stable_flag[i]=1;
-      count[i] = 1;
-    }
-          
-    prev_adc1[i] = v_adc1_buf;
-
-    // Calcurate Weight	  
-    v_adc3_buf = v_adc1_buf - v_adc_org[i][0];   
-
-    if(v_adc3_buf>=0) v_e_value[i] = (v_adc3_buf + 10) / 20;	// ???? ??
-    else              v_e_value[i] = (v_adc3_buf - 10) / 20;    
-
-    if(!v_cal_flag)
-    {
-      if(v_adc3_buf>=0)
-      {
-        if( v_adc3_buf > ((v_e_resolution[i]+9)*20) ) over_flag[i]=1;	// OVER
-        else over_flag[i]=0; 									
-      }
-    }
-    else  over_flag[i]=0;
-          
-    v_e_value[i] = v_e_value[i] * (unsigned long)v_minimum_division[i];   
-  }          
+  }
 }

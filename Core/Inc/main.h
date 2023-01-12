@@ -335,6 +335,8 @@ void cal_read(void);
 void cal_write(void);
 void multi_gap(unsigned long comp_value1, unsigned long comp_value2, unsigned char k, unsigned char j);
 void Secret_function(void);
+void eep_read(void);
+void eep_write(void);
 
 // DISPLAY
 void Write_Command(unsigned char Command);
@@ -367,6 +369,7 @@ void BLE_Lamp(uint8_t k);
 void STATE_Lamp(uint8_t k);
 void Hold_Lamp(uint8_t k);
 void Stable_Lamp(uint8_t k);
+void SUM_PRT_Lamp(uint8_t k);
 
 // UART
 unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb);
@@ -376,8 +379,12 @@ void DMA_CB_Read(DMA_CircularBuffer *cb, unsigned char* data, unsigned long cnt)
 void DMA_CB_PreRead(DMA_CircularBuffer *cb, unsigned char* data, unsigned long cnt);
 void Buf_init(char uart);
 void netid_mode(void);
+void rf_send(long imsi_value, unsigned char error_flg);
+void excess_sig(void);
+void stt_out(unsigned char onebyte);
+void tf_each_send(unsigned char pad, long rs_weight);
 
-//ADC
+// ADC
 long Battery_read(void);
 unsigned char Battery_check(void);
 
@@ -385,7 +392,17 @@ unsigned char Battery_check(void);
 void chip_select(unsigned char enable, unsigned char ad);
 long read_filtered_adc(unsigned char k);
 void adc_initial(void);
-void normal_mode();
+void Over_Weight(void);
+void LoadCell_Cheak(void);
+
+// NORMAL
+void Wired_Normal_Mode(void);
+void Wireless_Normal_Mode(void);
+void WeightModeSendToPad(void);
+void clr_motion(void);
+void chack_R_L_step(void);
+void inmotion_sum_prt(void);
+void v_auto_weight_stable_time_check(void);
 
 // KEY
 void KEYPAD_Scan(void);
@@ -409,15 +426,21 @@ void Memory_Input(unsigned char pick);
 void heading_edit(void);
 void bbik(void);
 
-#define OFF             0
-#define ON              1
-#define PEAK            2
-#define PEAK_OFF        99
-#define HOLD            3
+//#define OFF             0
+//#define ON              1
+//#define PEAK            2
+//#define PEAK_OFF        99
+//#define HOLD            3
 
-#define CAR             0
-#define ITEM            1        
+//#define CAR             0
+//#define ITEM            1     
 
+#define SUM               1
+#define PRT               2 
+
+#define TXD               0
+#define TXDI              1
+ 
 #define PAD_SEL           1
 #define STABLE            2
 #define WEIGH_IN_MOTION   3
@@ -440,8 +463,8 @@ void bbik(void);
 #define AUTO_ZERO         20
 #define HOLD_SPEED        21
 #define HOLD_ZERO         22
-#define OW_TIME           23
-#define MODE              99
+
+#define MODE              30
 
 #define V_RES_FACTOR             100  // 4*5*2
 #define V_ADC_ORG                140  // 4*5*2
@@ -450,6 +473,10 @@ void bbik(void);
 #define V_E_RESOLUTION           196  // 4*2
 #define V_MINIMUM_DIVISION       204  // 1*2
 #define V_MULTI_CAL              206   
+
+#define V_OVER_WEIGHT           207
+#define P_HEAD                  209
+
 
 void SystemClock_Config(void);
   

@@ -212,7 +212,7 @@ void rtc_set(void)
           else if(bound == 2)
           {
               sDate.Date++;
-              if(sDate.Date > 31) sDate.Date = 1;
+              if(sDate.Date>31) sDate.Date = 1;
           }
           else if(bound == 3)
           {
@@ -255,7 +255,7 @@ void rtc_set(void)
           if(bound == 0)
           {
               sDate.Year--;
-              if(sDate.Year<0 || sDate.Year>99) sDate.Year = 99;
+              if(sDate.Year<0) sDate.Year = 99;
           }
           else if(bound == 1)
           {
@@ -265,17 +265,17 @@ void rtc_set(void)
           else if(bound == 2)
           {
               sDate.Date--;
-              if(sDate.Date < 1) sDate.Date = 31;
+              if(sDate.Date<1) sDate.Date = 31;
           }
           else if(bound == 3)
           {
               sTime.Hours--;
-              if(sTime.Hours<0 || sTime.Hours>24) sTime.Hours = 23;
+              if(sTime.Hours<0) sTime.Hours = 23;
           }
           else if(bound == 4)
           {
               sTime.Minutes--;
-              if(sTime.Minutes<0 || sTime.Minutes>60) sTime.Minutes = 59;
+              if(sTime.Minutes<0) sTime.Minutes = 59;
           }
         }
         

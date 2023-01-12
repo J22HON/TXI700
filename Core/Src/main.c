@@ -68,11 +68,25 @@
 
   struct FUNCTION FunData;
   struct KEY Key;
-
   
+  extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+  extern LPTIM_HandleTypeDef hlptim1;
+  extern LPTIM_HandleTypeDef hlptim2;
+
+   DMA_HandleTypeDef hdma_lpuart_rx;
+   DMA_HandleTypeDef hdma_lpuart_tx;
+   DMA_HandleTypeDef hdma_usart2_rx;
+   DMA_HandleTypeDef hdma_usart2_tx;
+   DMA_HandleTypeDef hdma_usart3_rx;
+   DMA_HandleTypeDef hdma_usart3_tx;
+
   extern RTC_HandleTypeDef hrtc;
   extern RTC_DateTypeDef sDate;
   extern RTC_TimeTypeDef sTime;
+  
+   UART_HandleTypeDef hlpuart1;
+   UART_HandleTypeDef huart2;
+   UART_HandleTypeDef huart3;
   
   DMA_CircularBuffer Uart1Rx, Uart2Rx, Uart3Rx;
 
@@ -83,8 +97,7 @@
                                  v_ad_flag,
                                  v_multi_cal,
                                  v_minimum_division[2],
-                                 BatteryLevel,
-                                 pass_start,
+                                 BatteryLevel,                                 
                                  cal_confirm,
                                  stable_flag[2],
                                  over_flag[2],
@@ -93,7 +106,11 @@
                                  imsi,
                                  v_target,
                                  Cal_ad_flag,
-                                 i,
+                                 step_ch[2],
+                                 Sleep[16],
+                                 chck_R_L_flag,
+                                 difr_flag,
+                                 excess_flag,
                                  v_cal_flag,
                                  UartTxBuf[TXBUFFERSIZE],
                                  Uart1TxBuf[TXBUFFERSIZE],
@@ -103,7 +120,22 @@
                                  v_car_id[12],
                                  v_item[10],
                                  p_head[120],
-                                 pad;                            
+                                 step,
+                                 ErrorFlg,
+                                 OverFlg,
+                                 disp_sel,
+                                 one_time,
+                                 NextStep,
+                                 AutoEnterKeyFlg,
+                                 v_stable_check,
+                                 AutoPrintStep,
+                                 AutoPrintCheck,
+                                 v_stable_flag,
+                                 v_rs_flag1,
+                                 wim_error,
+                                 com1_flag,
+                                 com2_flag;
+                                                             
   
  unsigned long                  Time01Count,
                                  Time02Count,
@@ -123,18 +155,31 @@
                                  diff1[2],
                                  GetCurrRecvCount,          
                                  GetPreRecvCount,
-                                 CmdWaitCount;    
+                                 CmdWaitCount,
+                                 v_over_weight,
+                                 chck_R_L_t,
+                                 chck_R_L_tm,
+                                 inmtn_lmt_tm,
+                                 rs_err;    
  
-  unsigned short                 zero_count[2];
+  unsigned short                 zero_count[2],
+                                  s_delay;
   
   long                            BattOffSet,
                                   prev_adc1[2],
                                   v_adc1_buf, 
                                   v_adc3_buf,
-                                  v_e_value[2];
+                                  v_axle_value1[12],
+                                  v_axle_value2[12],
+                                  v_e_value[24],
+                                  v_axle_sum,
+                                  v_sum_value,
+                                  v_auto_weight_stable_time_count,
+                                  v_auto_print_time_count;
                                  
   unsigned int                   v_speed,
-                                  hlpuart1RxCnt;   
+                                  hlpuart1RxCnt,
+                                  ErrorFlgCount;   
   
   float                          v_res_factor[2][5];
   
@@ -186,7 +231,7 @@ int main(void)
   HAL_Delay(1500);
     
   HAL_RTC_WaitForSynchro(&hrtc);
-  
+    
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC3_Init();
@@ -228,48 +273,16 @@ int main(void)
   
   function_read();
   function_range();  
-  if(FunData.Mode != 3 || FunData.Mode != 4) function_reset();
+  if(FunData.Mode < 3 || FunData.Mode > 4) function_reset();
   cal_read();  
   adc_initial();    
   Clear_Screen();
-  
+  LoadCell_Cheak();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
   
-RETRY:
-  
-  if(FunData.Mode == 4)
-  {
-    for(i=0; i<2; i++)
-    {
-      do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);
 
-      if(( v_temp_long < 100) || (v_temp_long > 1000000l))	// LOAD CELL ERROR
-      { 
-        Battery_check(); 
-        mprintf(1, 3, " C H 0 2 ");
-        pass_start=0; 
-        HAL_Delay(700); 
-      } 
-      else
-      {
-        pass_start++;
-        multi_gap(v_temp_long, v_zero[i], 1, i);
-        do v_temp_long = read_filtered_adc(i); while(v_ad_flag==0);      
-        v_adc_org[i][0] = (unsigned long) ( ((float) v_temp_long) * v_res_factor[i][0] );
-      }
-    }
-    
-    if(cal_confirm==0) 
-    { 
-      if(pass_start!=2) 
-      {
-          pass_start=0; 
-          goto RETRY; 
-      }
-    }
-  }
   
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -278,17 +291,13 @@ RETRY:
     /* USER CODE END WHILE */
     KEYPAD_Scan();
     Battery_check();      
-    TimeRead();   
+    TimeRead();          
     
-    /*
     Uart1TxBuf[0] = 0x21;
-    Uart1TxBuf[1] = 49+pad;
+    Uart1TxBuf[1] = 49+1;
     Uart1TxBuf[2] = 0x5B;
-    if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 3)!= HAL_OK)
-    {
-      Error_Handler();
-    }
-    HAL_Delay(100);     */  
+    if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 3)!= HAL_OK) Error_Handler();
+    HAL_Delay(100);       
     
     if(BatteryLevel >= 95)      Batt_Lamp(114, 0, 4); 
     else if(BatteryLevel >= 75) Batt_Lamp(114, 0, 3);
@@ -300,32 +309,28 @@ RETRY:
     if(Key.PressFlg[0])      { Key.PressFlg[0]=0; }
     else if(Key.PressFlg[1]) { Key.PressFlg[1]=0; }
     else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; heading_edit();}  
-    else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; Memory_Input(CAR);}
-    else if(Key.PressFlg[4]) { Key.PressFlg[4]=0; Memory_Input(ITEM);}
+    else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; Memory_Input(0);}
+    else if(Key.PressFlg[4]) { Key.PressFlg[4]=0; Memory_Input(1);}
     else if(Key.PressFlg[5]) { Key.PressFlg[5]=0; }
     else if(Key.PressFlg[6]) { Key.PressFlg[6]=0; loadcell_test();}
     else if(Key.PressFlg[7]) { Key.PressFlg[7]=0; }
-    else if(Key.PressFlg[8]) { Key.PressFlg[8]=0; }
+    else if(Key.PressFlg[8]) { Key.PressFlg[8]=0; Over_Weight();}
     else if(Key.PressFlg[9]) { Key.PressFlg[9]=0; Setting_Mode();}
-    else if(Key.PressFlg[10]) { Key.PressFlg[10]=0; }
+    else if(Key.PressFlg[10]) { Key.PressFlg[10]=0; WeightModeSendToPad();}
     else if(Key.PressFlg[11]) { Key.PressFlg[11]=0; }
     else if(Key.PressFlg[12]) { Key.PressFlg[12]=0; }
     else if(Key.PressFlg[13]) { Key.PressFlg[13]=0; }   
     
-
-    if(FunData.Mode==4) normal_mode();
+    //if(FunData.Mode==3) Wireless_Normal_Mode();
+    //else if(FunData.Mode==4) Wired_Normal_Mode();
+    STATE_Lamp(FunData.Weigh_In_Motion);
     mprintf(1, 1,"PAD%d",FunData.Pad_Sel);    
-    mprintf(37, 1,"SUM");
-    mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);    
-    wprintf(" %5ld",10000);
-
-    Print_Str6x8(0xFF, 112, 7, " kg");
+    mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);        
+        
+    //wprintf(" %5ld",10000);
+    Print_Str6x8(0xFF, 112, 7, " kg");       
     
-    lamp_on();
-    /*    
-    Cmd_Recv_Check(&Uart1Rx); */
-
-
+    Cmd_Recv_Check(&Uart1Rx);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

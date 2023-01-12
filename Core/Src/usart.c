@@ -20,22 +20,26 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usart.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* USER CODE BEGIN 0 */
 /* USER CODE END 0 */
 
-UART_HandleTypeDef hlpuart1;
-UART_HandleTypeDef huart2;
-UART_HandleTypeDef huart3;
-DMA_HandleTypeDef hdma_lpuart_rx;
-DMA_HandleTypeDef hdma_lpuart_tx;
-DMA_HandleTypeDef hdma_usart2_rx;
-DMA_HandleTypeDef hdma_usart2_tx;
-DMA_HandleTypeDef hdma_usart3_rx;
-DMA_HandleTypeDef hdma_usart3_tx;
+extern UART_HandleTypeDef hlpuart1;
+extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
+extern DMA_HandleTypeDef hdma_lpuart_rx;
+extern DMA_HandleTypeDef hdma_lpuart_tx;
+extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart2_tx;
+extern DMA_HandleTypeDef hdma_usart3_rx;
+extern DMA_HandleTypeDef hdma_usart3_tx;
 
 extern DMA_CircularBuffer Uart1Rx, Uart2Rx;
 
+extern struct FUNCTION FunData;
 extern struct KEY Key;
 
 extern unsigned char               UartTxBuf[TXBUFFERSIZE],
@@ -43,7 +47,11 @@ extern unsigned char               UartTxBuf[TXBUFFERSIZE],
                                     Uart2TxBuf[TXBUFFERSIZE],
                                     UartRxBuf[200],
                                     Uart2RxBuf[200],
-                                    ShortBeep;
+                                    ShortBeep,
+                                    v_rs_flag1,
+                                    com1_flag,
+                                    com2_flag,
+                                    v_stable_flag;
 
 extern unsigned int                hlpuart1RxCnt;
 
@@ -369,42 +377,37 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 
 unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb)
 {
-
   unsigned char chk;
-  //unsigned long temp, temp_long;
-  //int i;
-
-
 
   GetCurrRecvCount =  DMA_Get_Cnt(cb);
- 
+  ShortBeep=1;
   chk=0;
   if( GetCurrRecvCount==GetPreRecvCount)
   {
+    bbik();
     if(GetCurrRecvCount!=0)
     {
       DMA_CB_Read(cb,UartRxBuf,GetCurrRecvCount);
       UartRxBuf[GetCurrRecvCount]=0;
       chk = 1;
       GetPreRecvCount=GetCurrRecvCount;
-      CmdWaitCount = 0;
-      //return (GetCurrRecvCount);
+      CmdWaitCount = 0;  
     }
   }
-  //else
-  //{
+  else
+  {
     GetPreRecvCount=GetCurrRecvCount;
-  //}
+  }
 
   
    if(chk)
-  {  
-
-      if(UartRxBuf[GetCurrRecvCount -1] == 0x0A)
-      {
-        ShortBeep = 1;
+  {       
+      if(FunData.Pad_Type == TXDI_PROTOCOL) //TXDI
+      {  
+        if(UartRxBuf[11] == 0x0A) {v_rs_flag1 = 1; } 
+        HAL_Delay(70);
       }      
-    }
+   }
   
   return 0;
 }
@@ -587,6 +590,7 @@ void Buf_init(char uart)
     {
         for(i=0; i<RXBUFFERSIZE; i++){Uart1Rx.Buf[i] = 0;}
         for(i=0; i<TXBUFFERSIZE; i++){Uart1TxBuf[i] = 0;}
+        v_rs_flag1=0;
     }
     else if(uart == 2)
     {
@@ -594,13 +598,106 @@ void Buf_init(char uart)
         for(i=0; i<TXBUFFERSIZE; i++){Uart2TxBuf[i] = 0;}
     }
     
-    else if(uart == 0)
-    {
-      for(i=0; i<200; i++){UartRxBuf[i] = 0;}
-    }
+    else if(uart == 0) for(i=0; i<200; i++){UartRxBuf[i] = 0;}
 }
 
+void rf_send(long imsi_value, unsigned char error_flg) //Send to TF-600
+{
+  unsigned char i, temp, buf[5];
+  unsigned long rs_value;
 
+  HAL_Delay(5);
+	
+  Uart1TxBuf[0] = 0x21;
+  Uart1TxBuf[1] = 'S'; 									
+  Uart1TxBuf[2] = 'D';						
+  temp = 0;
+  /*
+  if(OverFlg || excess_flag) temp = error_flg | 0x80;
+    else temp = error_flg;
+    if(com1_flag) temp = temp + 0x40; //division
+    if(lampdsp[7])  temp |= 0x08;  //MINUS
+    if(lampdsp[14]) temp |= 0x04;  //ZERO*/
+    
+  Uart1TxBuf[3] = temp;							
+
+  rs_value=imsi_value;
+  
+  for(i=5; i>0; i--)
+  { 
+          buf[i] = (unsigned char)(rs_value /10000); 		
+          rs_value = rs_value % 10000;
+          rs_value = rs_value * 10;
+  }  
+  Uart1TxBuf[4] = buf[5]+'0';
+  Uart1TxBuf[5] = buf[4]+'0';
+  Uart1TxBuf[6] = buf[3]+'0';
+  Uart1TxBuf[7] = buf[2]+'0';
+  Uart1TxBuf[8] = buf[1]+'0';
+  Uart1TxBuf[8] = 0x0D; 								
+  Uart1TxBuf[9] = 0x0A; 									
+  if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 10)!= HAL_OK) Error_Handler();
+  HAL_Delay(40);
+}
+
+void stt_out(unsigned char onebyte)
+{
+  unsigned char i;
+
+  HAL_Delay(5);
+
+  Uart1TxBuf[0] = 0x21;
+  Uart1TxBuf[1] = 'S'; 			
+  Uart1TxBuf[2] = 'D';			
+  Uart1TxBuf[3] = 0;				
+
+  for(i=0; i <5; i++) Uart1TxBuf[i+4] = onebyte;
+  
+  Uart1TxBuf[9] = 0x0D;				
+  Uart1TxBuf[10] = 0x0A;				
+  if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 11)!= HAL_OK) Error_Handler();
+  HAL_Delay(20);
+}
+
+void tf_each_send(unsigned char pad, long rs_weight)
+{
+    unsigned char rs;
+    unsigned char send_buffer[11];
+    unsigned char state = 0;
+
+    send_buffer[0] = 'X';
+    if(pad!=0xFF) 
+    {
+        pad++;
+    	send_buffer[1] = pad;
+    }
+    else          
+    {
+        send_buffer[1] = 'T';
+    }
+
+    if(rs_weight<0) //v_sign_flag
+    { 
+        state |= 0x08;
+        rs_weight = rs_weight*-1;
+    }
+    if(v_stable_flag)  state |= 0x10;
+    if(com1_flag) state += 0x80;
+    else if(com2_flag) state += 0x40;
+    send_buffer[2] = state;
+    for(rs=7; rs>0; rs--)        
+    { 
+        send_buffer[rs+3] = (unsigned char)(rs_weight/1000000)+'0';
+        rs_weight = rs_weight %1000000;
+        rs_weight = rs_weight * 10;
+    }
+    send_buffer[10] = 0x0A;	
+    
+    Uart1TxBuf[0] = 0x21;
+    for(rs=0; rs<11; rs++) Uart1TxBuf[rs+1]=(send_buffer[rs]);
+    if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 12)!= HAL_OK) Error_Handler();
+     HAL_Delay(30);
+}
 
 /* USER CODE END 1 */
 

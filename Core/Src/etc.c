@@ -313,7 +313,8 @@ void heading_edit(void)
        { 
          Key.PressFlg[13] = 0; 
          if(id_digit) { for(i=0; i<20; i++) p_head[i]=id_back[i]; }
-         else         { for(i=0; i<20; i++) p_head[i]=0xFF; }        
+         else         { for(i=0; i<20; i++) p_head[i]=0xFF; }  
+         for(i=0; i<20; i++)eeprom_1byte_write(P_HEAD, p_head[i]);
          Clear_Screen();
          break;
        }
@@ -340,7 +341,8 @@ void heading_edit(void)
        { 
          Key.PressFlg[13] = 0; 
          if(id_digit) { for(i=0; i<20; i++) p_head[i]=id_back[i]; }
-         else         { for(i=0; i<20; i++) p_head[i]=0xFF; }        
+         else         { for(i=0; i<20; i++) p_head[i]=0xFF; } 
+         for(i=0; i<20; i++)eeprom_1byte_write(P_HEAD, p_head[i]); 
          Clear_Screen();
          break;
        }
