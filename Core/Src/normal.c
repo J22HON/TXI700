@@ -2,6 +2,10 @@
 #include "dma.h"
 #include "usart.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
   extern UART_HandleTypeDef hlpuart1;
   extern UART_HandleTypeDef huart2;
   extern UART_HandleTypeDef huart3;
@@ -53,7 +57,16 @@
                                  AutoPrintCheck,
                                  v_stable_flag,
                                  com1_flag,
-                                 com2_flag;                                                     
+                                 com2_flag,
+                                 com3_flag,
+                                 rs_minus,
+                                 v_sign_flag[16],
+                                 v_over_sig[16],
+                                 v_batt_sig[16],
+                                 minus_flag,
+                                 v_over_flag,
+                                 pad_no,
+                                 in_pad;                                                     
   
   extern unsigned long          Time01Count,
                                  Time02Count,
@@ -80,7 +93,9 @@
                                  inmtn_lmt_tm,
                                  v_rs_flag1,
                                  rs_err,
-                                 wim_error;    
+                                 wim_error,
+                                 step_comp1,
+                                 delay_time;    
  
   extern unsigned short         zero_count[2],
                                  s_delay;
@@ -95,7 +110,8 @@
                                   v_axle_sum,
                                   v_sum_value,
                                   v_auto_weight_stable_time_count,
-                                  v_auto_print_time_count;
+                                  v_auto_print_time_count,
+                                  ulNet_Value_tmp;
                                  
   extern unsigned int            v_speed,
                                   hlpuart1RxCnt,
@@ -105,12 +121,21 @@
   
   unsigned char                  change_step,
                                   clr_m_flag=0,
-                                  step_number=0,
-                                  pad_no=0,
-                                  in_pad=0;
+                                  step_number=0,                                                                  
+                                  step_point0=0,
+                                  wim_disp=0;
+                                  
+  
+  unsigned long	          digit=0,
+                                  rs_value=0,
+                                  prev_value=0; 
+  
+  long			          wim_value=0;
 
 void Wireless_Normal_Mode(void)
 {      
+  unsigned char 	k=0;
+  
   if(FunData.Weigh_In_Motion==2) chack_R_L_step();
   
   else
@@ -138,21 +163,22 @@ void Wireless_Normal_Mode(void)
     if(Sleep[pad_no] == 2 || Sleep[pad_no] == 3) {Uart1TxBuf[2] = 0x5B;}  
     else Uart1TxBuf[2] = 0x5D;
     if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 3)!= HAL_OK) Error_Handler();
-    HAL_Delay(300); 
+    HAL_Delay(100); 
   }
   else
   {
     if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 2)!= HAL_OK) Error_Handler();
-    HAL_Delay(300);
+    HAL_Delay(100);
   }
   
   while(v_rs_flag1==0)
   {
-    Cmd_Recv_Check(&Uart1Rx);
-    //if(Uart1Rx.Buf[11] == 0x0A) {v_rs_flag1 = 1;}
+    //Cmd_Recv_Check(&Uart1Rx);
     
     if(FunData.Pad_Type == TXDI)
     {
+      if(Uart1Rx.Buf[11] == 0x0A) {v_rs_flag1 = 1;}
+      
       if(s_delay>50 && (Sleep[pad_no] < 2 || Sleep[pad_no] == 4))
       { 
           rs_err++; 
@@ -190,6 +216,7 @@ void Wireless_Normal_Mode(void)
           return;
       }
     }    
+    if(v_rs_flag1) break;
   }
 
   if(wim_error==0)
@@ -222,21 +249,251 @@ void Wireless_Normal_Mode(void)
         }
       }
   }
-  
+
   if( (Uart1Rx.Buf[2]=='A')||(Uart1Rx.Buf[2]=='B') )	
   {
-    if(Uart1Rx.Buf[2]=='A'){ wprintf(" FAST"); if(FunData.Wireless_Output){ stt_out('B'); }}
-    else		 { wprintf(" SLO"); if(FunData.Wireless_Output){ stt_out('A'); }}
+    if(Uart1Rx.Buf[2]=='A'){ wprintf(" F,A,S,T, "); if(FunData.Wireless_Output){ stt_out('B'); }}
+    else		 { wprintf(" S,L,O, "); if(FunData.Wireless_Output){ stt_out('A'); }}
     wim_error=1;
   }
   
   else
   {
-    ;
+    v_temp_long=0; 
+    digit=10000; 
+    
+    if(Uart1Rx.Buf[3]=='Z')   
+    {
+        stt_out('Z');
+        ShortBeep = 1;
+        HAL_Delay(40); 
+        Buf_init(1); 
+        
+        if(FunData.Weigh_In_Motion) return;
+        if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)
+        {
+            Uart1TxBuf[0] = 0x21;
+            Uart1TxBuf[1] = 'S';
+            Uart1TxBuf[2] = 'T';
+            Uart1TxBuf[3] = 'M';
+            Uart1TxBuf[4] = 'O';
+            Uart1TxBuf[5] = 'D';
+            Uart1TxBuf[6] = 'E';
+            Uart1TxBuf[7] = 'Z';
+            Uart1TxBuf[8] = 'Z';	
+            Uart1TxBuf[9] = 0x0D;
+            Uart1TxBuf[10] = 0x0A;
+            if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 11)!= HAL_OK) Error_Handler();
+            HAL_Delay(100);
+        }
+
+        wprintf(" Z,E,R,O,");
+        HAL_Delay(700);
+        disp_sel=0;                         
+
+        Buf_init(1);                        
+        
+        return;; 
+    }
+    
+    if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)
+    {
+        if(Uart1Rx.Buf[3]=='-')	rs_minus=1;		
+        else			rs_minus=0;		
+
+        if(FunData.Weigh_In_Motion) rs_minus=0;	
+
+        rs_value=0;
+        for(k=5; k<10; k++)		
+        { 
+            rs_value = (unsigned long)(Uart1Rx.Buf[k]-'0');
+
+            if(rs_value>9 && (Sleep[Uart1Rx.Buf[1]] < 2 || Sleep[Uart1Rx.Buf[1]] == 4))	// ?? ??? ?? ???? ??. 
+            {
+                HAL_Delay(40); 
+                Buf_init(1); 
+                return;
+            }
+
+            v_temp_long = v_temp_long + rs_value * digit;
+            digit = digit / 10; 
+        }
+        in_pad = (Uart1Rx.Buf[1]-1);  
+    }
+    
+    if( (in_pad>(FunData.Pad_Sel-1))||(v_temp_long>99999) )
+    { 
+        HAL_Delay(40); 
+        Buf_init(1); 
+        return;
+    }
+      
+    v_e_value[in_pad]=v_temp_long;
+    
+    if(rs_minus){ v_sign_flag[in_pad]=1; v_e_value[in_pad]=v_e_value[in_pad]*-1; }
+    else 	{ v_sign_flag[in_pad]=0; }
+    
+    if(FunData.Pad_Type == TXD)
+    {
+        if((Uart1Rx.Buf[4]&0x08)==0x08)	v_batt_sig[in_pad]=1;	
+        else    			v_batt_sig[in_pad]=0;
+
+        if((Uart1Rx.Buf[4]&0x04)==0x04)	v_over_sig[in_pad]=1;	
+        else                            v_over_sig[in_pad]=0;
+
+        if( (Uart1Rx.Buf[4]&0x10)==0x10) com1_flag=1;
+        else				 com1_flag=0;
+    }
+    
+    else if(FunData.Pad_Type == TXDI)
+    {
+        if((Uart1Rx.Buf[4]&0x08)==0x08)	v_batt_sig[in_pad]=1;	
+        else    			v_batt_sig[in_pad]=0;
+
+        if((Uart1Rx.Buf[4]&0x04)==0x04)	v_over_sig[in_pad]=1;	
+        else                            v_over_sig[in_pad]=0;
+
+        if( (Uart1Rx.Buf[4]&0x80)==0x80) com1_flag=1;
+        else if ( (Uart1Rx.Buf[4]&0x40)==0x40) com2_flag=1;
+        else if ( (Uart1Rx.Buf[4]&0x20)==0x20) com3_flag=1;
+        else{com1_flag=0; com2_flag=0; com3_flag=0;}
+    }
+    
+    v_sum_value=0;
+    
+    for(k=0; k<FunData.Pad_Sel; k++) v_sum_value = (v_sum_value+v_e_value[k]);
+    
+    if(v_sum_value<0)	{v_sum_value = -1*v_sum_value;	minus_flag=1;	} 
+    else		minus_flag=0;
+    
+    if(minus_flag==0)
+    {
+      if (v_sum_value > prev_value )  diff[0] = v_sum_value - prev_value;
+      else                            diff[0] = prev_value - v_sum_value;
+
+      if( diff[0] >= (FunData.Stable*20) ) count[0]=1;
+
+      if(count[0] < 6)
+      {
+         if(diff[0] < (FunData.Stable*20) ) count[0]++;
+         else { v_stable_flag=0; count[0]=1;}	
+      }
+      else 
+      {	
+        v_stable_flag=1;
+        count[0]=1; 
+      }
+
+      prev_value = v_sum_value;
+      
+      
+      if(FunData.Weigh_In_Motion)
+      {
+          v_stable_flag=1;
+          if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)step_ch[in_pad]=Uart1Rx.Buf[2]; 
+
+          if( (in_pad==1)&&(step_ch[0]==step_ch[1]) ) // 2?? ? ?? 2? ?? ??? ??? ??
+          {
+            if(FunData.Weigh_In_Motion==2) check_n_step();
+                    
+            wim_error=0;
+            step = step_ch[1];
+
+            if(  (FunData.Weigh_In_Motion==2)&&( (FunData.Auto_Measuring>=5)&&(FunData.Auto_Measuring<=30) )  ) auto_time_step();
+            
+            if(step==0) Zero_Lamp(ON);
+            else      	Zero_Lamp(OFF);
+            
+            if(step!=change_step) 
+            {
+              ShortBeep = 1;
+              wim_disp = 1; 
+            }
+            else wim_disp = 0; 	
+            
+            if(step)
+            {
+              v_axle_value1[step-1] = v_e_value[0];
+              v_axle_value2[step-1] = v_e_value[1];
+            }
+
+              wim_value = v_e_value[0]+ v_e_value[1];
+              change_step=step;
+              
+              step_ch[0]=0xFF; 
+              step_ch[1]=0xFF;
+          }
+      }
+      else  //static
+      {
+        //if(minus_flag) 		lampdsp[7]=1;			//	MINUS
+        //else           		lampdsp[7]=0;			//	MINUS
+        
+        if(!v_sum_value) 	Zero_Lamp(ON);			
+        else             	Zero_Lamp(OFF);			
+      }
+    }
+    else OnePadDisplay();	
+    
+    if(v_batt_sig[0]||v_batt_sig[1]||v_batt_sig[2]||v_batt_sig[3]||v_batt_sig[4]||v_batt_sig[5]||v_batt_sig[6]||v_batt_sig[7]||v_batt_sig[8]||v_batt_sig[9]||v_batt_sig[10]||v_batt_sig[11]||v_batt_sig[12]||v_batt_sig[13]||v_batt_sig[14]||v_batt_sig[15])
+    {
+      if(delay_time<4000) 
+      {
+        if(v_over_sig[0]||v_over_sig[1]||v_over_sig[2]||v_over_sig[3]||v_over_sig[4]||v_over_sig[5]||v_over_sig[6]||v_over_sig[7]||v_over_sig[8]||v_over_sig[9]||v_over_sig[10]||v_over_sig[11]||v_over_sig[12]||v_over_sig[13]||v_over_sig[14]||v_over_sig[15])
+        { 
+          wprintf(" O,V,E,R "); 
+          v_over_flag=1; 
+        }
+        else 
+        { 
+          if(!FunData.Display_Used || (Sleep[0]<2 && Sleep[1]<2 && Sleep[2]<2 && Sleep[3]<2 && Sleep[4]<2 && Sleep[5]<2 && Sleep[6]<2 && Sleep[7]<2 && Sleep[8]<2
+                  && Sleep[9]<2 && Sleep[10]<2 && Sleep[11]<2 && Sleep[12]<2 && Sleep[13]<2 && Sleep[14]<2 && Sleep[15]<2))
+          {
+              if( (FunData.Weigh_In_Motion)&&(wim_error==0) ) 
+              { 
+                  if( (step)&&(wim_disp) ){ if(minus_flag) wprintf("-%5ld",wim_value); else wprintf(" %5ld",wim_value);}
+                  else wprintf(" %5ld",0);
+              }
+              else { if(minus_flag) wprintf("-%5ld",v_sum_value); else wprintf(" %5ld",v_sum_value);}	
+          }
+          else wprintf(" S,L,E,E, ");
+                
+          v_over_flag=0;                
+          // kg	
+        }
+      }
+        //    else PadBattDisp();
+    }
+    else 
+    {
+      if( v_over_sig[0]||v_over_sig[1]||v_over_sig[2]||v_over_sig[3]||v_over_sig[4]||v_over_sig[5]||v_over_sig[6]||v_over_sig[7]||v_over_sig[8]||v_over_sig[9]||v_over_sig[10]||v_over_sig[11]||v_over_sig[12]||v_over_sig[13]||v_over_sig[14]||v_over_sig[15])
+      { 
+        wprintf(" O,V,E,R ");
+        v_over_flag=1; 
+      }
+      else 
+      {
+        if(!FunData.Display_Used || (Sleep[0]<2 && Sleep[1]<2 && Sleep[2]<2 && Sleep[3]<2 && Sleep[4]<2 && Sleep[5]<2 && Sleep[6]<2 && Sleep[7]<2 && Sleep[8]<2
+                    && Sleep[9]<2 && Sleep[10]<2 && Sleep[11]<2 && Sleep[12]<2 && Sleep[13]<2 && Sleep[14]<2 && Sleep[15]<2) )
+        {
+           if( (FunData.Weigh_In_Motion)&&(wim_error==0) ) 
+           { 
+              if( (step)&&(wim_disp) )	{ if(minus_flag) wprintf("-%5ld",wim_value); else wprintf(" %5ld",wim_value);}
+              else { if(minus_flag) wprintf("-%5ld",v_sum_value); else wprintf(" %5ld",v_sum_value);}
+            }
+            else wprintf(" %5ld",v_sum_value);
+        }
+        else wprintf(" S,L,E,E, ");
+       
+        v_over_flag=0;
+      }
+    }           
   }
   
   Buf_init(1);
-  
+  pad_no++;
+  if(pad_no>=FunData.Pad_Sel)pad_no=0;
+  RealTimeWarningCheck();
      
 }
 
@@ -710,4 +967,94 @@ void v_auto_weight_stable_time_check(void)
       v_auto_print_time_count = 0;
     }
   }
+}
+
+void check_n_step(void)
+{
+  if( ((step>=1) && (step<=12))==0 ) step_point0=1;
+}
+
+void OnePadDisplay(void)
+{
+  if(v_sign_flag[disp_sel-1]) 
+  {
+    //lampdsp[7]=1;								//	 MINUS
+    v_sum_value=v_e_value[disp_sel-1]*-1; 
+  }
+  else									
+  { 
+    //lampdsp[7]=0;								//	MINUS
+    v_sum_value=v_e_value[disp_sel-1];
+  }
+
+  /* ZERO */
+  if(!v_e_value[disp_sel-1])	Zero_Lamp(ON);								
+  else			        Zero_Lamp(OFF);							
+}
+
+void auto_time_step(void)
+{
+  unsigned char step_point[9];
+  unsigned char tc_flag;
+  unsigned int  step_count;
+
+  unsigned char i=0;
+  unsigned char j=0;
+
+  if( (step>=1) && (step<=12) ) 
+  {
+    for(i=1; i<=12; i++)
+    {
+      if(step==i)
+      {
+        j=i;
+
+        if( (step_point0==1) || (step_point[j-1]==1) )
+        {
+          inmtn_lmt_tm=0;    
+          step_comp1=0; 
+          step_point0=0;
+          step_point[j-1]=0; 
+          step_count=0;
+        }
+
+        step_count++;
+              
+        if(step_count==2) step_comp1=inmtn_lmt_tm;
+
+        if( (inmtn_lmt_tm-step_comp1) > FunData.Auto_Measuring )
+        {
+          tc_flag=1; 
+          inmtn_lmt_tm=0;
+          step_comp1=0;
+        }
+
+        if(tc_flag)
+        {
+          tc_flag=0;
+          ShortBeep=1, 
+          clr_m_flag=1, 
+          step_number=j;
+          step_count=0; 
+        }
+
+        step_point[j]=1;
+      }
+    }
+  }
+}
+
+void RealTimeWarningCheck(void)
+{
+  long	lRealtime_NetValue=0;
+	
+  if( (v_over_weight==0)||(FunData.Over_Enable!=2)) return;
+
+  lRealtime_NetValue=ulNet_Value_tmp;		
+
+  if(v_over_weight<v_sum_value)
+  {
+      excess_flag=1;
+      bbik();
+  }	
 }

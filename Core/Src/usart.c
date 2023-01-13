@@ -380,11 +380,9 @@ unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb)
   unsigned char chk;
 
   GetCurrRecvCount =  DMA_Get_Cnt(cb);
-  ShortBeep=1;
   chk=0;
   if( GetCurrRecvCount==GetPreRecvCount)
   {
-    bbik();
     if(GetCurrRecvCount!=0)
     {
       DMA_CB_Read(cb,UartRxBuf,GetCurrRecvCount);
@@ -394,7 +392,7 @@ unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb)
       CmdWaitCount = 0;  
     }
   }
-  else
+  //else
   {
     GetPreRecvCount=GetCurrRecvCount;
   }
@@ -404,8 +402,7 @@ unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb)
   {       
       if(FunData.Pad_Type == TXDI_PROTOCOL) //TXDI
       {  
-        if(UartRxBuf[11] == 0x0A) {v_rs_flag1 = 1; } 
-        HAL_Delay(70);
+        if(UartRxBuf[GetCurrRecvCount -1] == 0x0A) {v_rs_flag1 = 1;} 
       }      
    }
   
@@ -479,9 +476,11 @@ void DMA_CB_PreRead(DMA_CircularBuffer *cb, unsigned char* data, unsigned long c
 
 void netid_mode(void)
 {
-    static unsigned char low, high, sum; 
+    static unsigned char low, high, sum, rx_count_back; 
       char i;
-           
+      
+      Buf_init(1);
+      while(hlpuart1.TxXferCount);
       Clear_Screen();                 
       KEYPAD_Scan(); 
       mprintf(1, 1, "     - PAIRING - ");
@@ -489,23 +488,26 @@ void netid_mode(void)
               
       while(1)
       {
-                 
+          
         if(Uart1Rx.Buf[7] == (unsigned char)((Uart1Rx.Buf[5] + Uart1Rx.Buf[6] + 0x82))) break;
-                
-        Buf_init(1);
-        Uart1TxBuf[0]=0x1F;  
-        Uart1TxBuf[1]=0x12; 
-        Uart1TxBuf[2]=0x00; 
-        Uart1TxBuf[3]=0x1F+0x12; // write        
-        if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 4)!= HAL_OK)
-        {
-          Error_Handler();
+        if(!hlpuart1.TxXferCount)
+        {          
+          Buf_init(1);
+          Uart1TxBuf[0]=0x1F;  
+          Uart1TxBuf[1]=0x12; 
+          Uart1TxBuf[2]=0x00; 
+          Uart1TxBuf[3]=0x1F+0x12; // write        
+          if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 4)!= HAL_OK) Error_Handler();
+          HAL_Delay(20);   
         }
-        HAL_Delay(20);        
+        HAL_Delay(20); 
       }
       
+      if(Uart1Rx.Buf[7] == (unsigned char)((Uart1Rx.Buf[5] + Uart1Rx.Buf[6] + 0x82)))
+      {
       hlpuart1.hdmarx->Instance->CNDTR = RXBUFFERSIZE;      
-      hlpuart1RxCnt = hlpuart1.hdmarx->Instance->CNDTR;      
+      hlpuart1RxCnt = hlpuart1.hdmarx->Instance->CNDTR;
+      rx_count_back = hlpuart1RxCnt;      
       HAL_Delay(50);                    
                   
         low = Uart1Rx.Buf[5];
@@ -516,11 +518,8 @@ void netid_mode(void)
         Uart1TxBuf[1]=0x00; 
         Uart1TxBuf[2]=0x00; 
         Uart1TxBuf[3]=0x12; // write
-        if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 4)!= HAL_OK)
-        {
-          Error_Handler();
-        }
-        
+        if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 4)!= HAL_OK) Error_Handler();
+
         HAL_Delay(20);            
         mprintf(1, 5, "     Press Enter     ");
           while(1)
@@ -574,7 +573,8 @@ void netid_mode(void)
               Key.PressFlg[12] = 0;
               return;
             }              
-        } 
+        }
+      }
       
                    
         mprintf(1, 5, "          END         ");

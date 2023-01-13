@@ -72,6 +72,8 @@ extern UART_HandleTypeDef huart3;
   
 extern struct FUNCTION FunData;
 
+extern DMA_CircularBuffer Uart1Rx, Uart2Rx, Uart3Rx;
+
 extern unsigned char         ShortBeep,
                               Time01Start,
                               Time02Start,
@@ -80,7 +82,8 @@ extern unsigned char         ShortBeep,
                               ErrorFlg,
                               Sleep[16],
                               chck_R_L_flag,
-                              difr_flag;
+                              difr_flag,
+                              v_rs_flag1;
 
 extern unsigned short        s_delay;
 
@@ -89,7 +92,8 @@ extern unsigned long         Time01Count,
                               ShortBeepCount,
                               chck_R_L_t,
                               chck_R_L_tm,
-                              inmtn_lmt_tm;
+                              inmtn_lmt_tm,
+                              delay_time;
 
 extern unsigned int          ErrorFlgCount;
 /* USER CODE BEGIN EV */
@@ -252,6 +256,9 @@ void SysTick_Handler(void)
       ErrorFlgCount = 0;
   }
   
+  delay_time++;
+  if(delay_time > 5100) delay_time = 0;
+  
   s_delay++;
   if(s_delay > 20000) s_delay=0;
   
@@ -283,7 +290,7 @@ void SysTick_Handler(void)
       inmtn_lmt_tm=0;										
       chck_R_L_tm=0;
     }    
-  }
+  }  
   
   if(!PSW_READ && PowerOn)
   {

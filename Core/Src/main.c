@@ -27,6 +27,14 @@
 #include "tim.h"
 #include "usb_device.h"
 #include "gpio.h"
+    
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>  
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -134,7 +142,16 @@
                                  v_rs_flag1,
                                  wim_error,
                                  com1_flag,
-                                 com2_flag;
+                                 com2_flag,
+                                 com3_flag,
+                                 rs_minus,
+                                 v_sign_flag[16],
+                                 v_batt_sig[16],
+                                 v_over_sig[16],
+                                 minus_flag,
+                                 v_over_flag,
+                                 pad_no,
+                                 in_pad;
                                                              
   
  unsigned long                  Time01Count,
@@ -160,7 +177,9 @@
                                  chck_R_L_t,
                                  chck_R_L_tm,
                                  inmtn_lmt_tm,
-                                 rs_err;    
+                                 rs_err,
+                                 step_comp1,
+                                 delay_time;    
  
   unsigned short                 zero_count[2],
                                   s_delay;
@@ -175,13 +194,14 @@
                                   v_axle_sum,
                                   v_sum_value,
                                   v_auto_weight_stable_time_count,
-                                  v_auto_print_time_count;
+                                  v_auto_print_time_count,
+                                  ulNet_Value_tmp;
                                  
   unsigned int                   v_speed,
                                   hlpuart1RxCnt,
                                   ErrorFlgCount;   
   
-  float                          v_res_factor[2][5];
+  float                          v_res_factor[2][5];  
   
 /* USER CODE END 0 */
 
@@ -189,7 +209,7 @@
   * @brief  The application entry point.
   * @retval int
   */
-int main(void) 
+ int main(void) 
 {
 
   /* USER CODE BEGIN 1 */
@@ -236,8 +256,22 @@ int main(void)
   MX_ADC1_Init();
   MX_ADC3_Init();
   MX_LPTIM1_Init();
-  MX_LPTIM2_Init();
-   
+  MX_LPTIM2_Init();   
+  
+  MX_RTC_Init();
+  MX_TIM15_Init();
+  MX_USB_DEVICE_Init();
+  ShortBeep = 1;
+  PowerOn = 1;
+  
+  function_read();
+  function_range();  
+  if(FunData.Mode < 3 || FunData.Mode > 4) function_reset();
+  cal_read();  
+  adc_initial();    
+  Clear_Screen();
+  LoadCell_Cheak();
+  
   MX_LPUART1_UART_Init();
   if (HAL_UART_Receive_DMA(&hlpuart1, (unsigned char*)Uart1Rx.Buf, RXBUFFERSIZE) != HAL_OK)  //rx dma zigbee
   {
@@ -245,7 +279,7 @@ int main(void)
     mprintf(1, 3, "          ERR-U1      ");
     Error_Handler();
   }
-  DMA_CB_Init(&Uart1Rx,Uart1Rx.Buf,RXBUFFERSIZE,(unsigned long *)&(hlpuart1.hdmarx->Instance->CNDTR) );
+  DMA_CB_Init(&Uart1Rx,Uart1Rx.Buf,RXBUFFERSIZE,(unsigned long *)&(hlpuart1.hdmarx->Instance->CNDTR) ); 
   
   MX_USART2_UART_Init();
   if (HAL_UART_Receive_DMA(&huart2, (unsigned char*)Uart2Rx.Buf, RXBUFFERSIZE) != HAL_OK)  //rx dma ble
@@ -264,25 +298,10 @@ int main(void)
     Error_Handler();
   }
   DMA_CB_Init(&Uart3Rx,Uart3Rx.Buf,RXBUFFERSIZE,(unsigned long *)&(huart3.hdmarx->Instance->CNDTR) );   
-  
-  MX_RTC_Init();
-  MX_TIM15_Init();
-  MX_USB_DEVICE_Init();
-  ShortBeep = 1;
-  PowerOn = 1;
-  
-  function_read();
-  function_range();  
-  if(FunData.Mode < 3 || FunData.Mode > 4) function_reset();
-  cal_read();  
-  adc_initial();    
-  Clear_Screen();
-  LoadCell_Cheak();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
   
-
   
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -291,13 +310,7 @@ int main(void)
     /* USER CODE END WHILE */
     KEYPAD_Scan();
     Battery_check();      
-    TimeRead();          
-    
-    Uart1TxBuf[0] = 0x21;
-    Uart1TxBuf[1] = 49+1;
-    Uart1TxBuf[2] = 0x5B;
-    if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 3)!= HAL_OK) Error_Handler();
-    HAL_Delay(100);       
+    TimeRead();              
     
     if(BatteryLevel >= 95)      Batt_Lamp(114, 0, 4); 
     else if(BatteryLevel >= 75) Batt_Lamp(114, 0, 3);
@@ -321,16 +334,12 @@ int main(void)
     else if(Key.PressFlg[12]) { Key.PressFlg[12]=0; }
     else if(Key.PressFlg[13]) { Key.PressFlg[13]=0; }   
     
-    //if(FunData.Mode==3) Wireless_Normal_Mode();
-    //else if(FunData.Mode==4) Wired_Normal_Mode();
+    if(FunData.Mode==3) Wireless_Normal_Mode();
+    else if(FunData.Mode==4) Wired_Normal_Mode();
     STATE_Lamp(FunData.Weigh_In_Motion);
     mprintf(1, 1,"PAD%d",FunData.Pad_Sel);    
-    mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);        
-        
-    //wprintf(" %5ld",10000);
+    mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);               
     Print_Str6x8(0xFF, 112, 7, " kg");       
-    
-    Cmd_Recv_Check(&Uart1Rx);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

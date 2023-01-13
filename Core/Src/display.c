@@ -370,13 +370,15 @@ void Print_Text18x40(unsigned char x_pos, unsigned char y_pos, unsigned char ch)
     else if(ch=='D') ch = 7;
     else if(ch=='A') ch = 8;
     else if(ch=='-') ch = 9;
+    else if(ch=='S') ch = 10;
+    else if(ch=='T') ch = 11;
+    else if(ch=='Z') ch = 12;
     
     for(j=0; j<5; j++)
     {
         Oled_Gotoxy(x_pos, y_pos+j); 
         for(i = 0; i < 18; i++) Write_Data(TEXT18x40[ch][i+j*18]);  
-    }
-    
+    }    
 }
 
 void Print_Num18x40(unsigned char x_pos, unsigned char y_pos, unsigned char ch) // 18x40NUM FONT

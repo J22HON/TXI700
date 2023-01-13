@@ -403,6 +403,10 @@ void clr_motion(void);
 void chack_R_L_step(void);
 void inmotion_sum_prt(void);
 void v_auto_weight_stable_time_check(void);
+void check_n_step(void);
+void OnePadDisplay(void);
+void auto_time_step(void);
+void RealTimeWarningCheck(void);
 
 // KEY
 void KEYPAD_Scan(void);
@@ -426,8 +430,8 @@ void Memory_Input(unsigned char pick);
 void heading_edit(void);
 void bbik(void);
 
-//#define OFF             0
-//#define ON              1
+#define OFF             0
+#define ON              1
 //#define PEAK            2
 //#define PEAK_OFF        99
 //#define HOLD            3
@@ -480,6 +484,17 @@ void bbik(void);
 
 void SystemClock_Config(void);
   
+void MX_LPUART1_UART_Init(void);
+void MX_USART2_UART_Init(void);
+void MX_USART3_UART_Init(void);
+void MX_DMA_Init(void);
+void MX_ADC1_Init(void);
+void MX_ADC3_Init(void);
+void MX_LPTIM1_Init(void);
+void MX_LPTIM2_Init(void);
+void MX_RTC_Init(void);
+void MX_TIM15_Init(void);
+void MX_USB_DEVICE_Init(void);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
