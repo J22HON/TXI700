@@ -151,7 +151,8 @@
                                  minus_flag,
                                  v_over_flag,
                                  pad_no,
-                                 in_pad;
+                                 in_pad,
+                                 normal_init;
                                                              
   
  unsigned long                  Time01Count,
@@ -243,6 +244,7 @@
   ADC_CS1_HI;
   ADC_CS2_HI;
   ZIGBEE_ON;
+  BLE_ON;
   
   OLED_Initialize();
   LOGO_Print(0);
@@ -308,39 +310,11 @@
   while (1)
   {
     /* USER CODE END WHILE */
-    KEYPAD_Scan();
-    Battery_check();      
-    TimeRead();              
-    
-    if(BatteryLevel >= 95)      Batt_Lamp(114, 0, 4); 
-    else if(BatteryLevel >= 75) Batt_Lamp(114, 0, 3);
-    else if(BatteryLevel >= 50) Batt_Lamp(114, 0, 2);
-    else if(BatteryLevel >= 25) Batt_Lamp(114, 0, 1);
-    else if(BatteryLevel >= 10)  Batt_Lamp(114, 0, 0);
-    else { Batt_Lamp(114, 0, 1); HAL_Delay(50); Batt_Lamp(114, 0, 0); HAL_Delay(50); }
-    
-    if(Key.PressFlg[0])      { Key.PressFlg[0]=0; }
-    else if(Key.PressFlg[1]) { Key.PressFlg[1]=0; }
-    else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; heading_edit();}  
-    else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; Memory_Input(0);}
-    else if(Key.PressFlg[4]) { Key.PressFlg[4]=0; Memory_Input(1);}
-    else if(Key.PressFlg[5]) { Key.PressFlg[5]=0; }
-    else if(Key.PressFlg[6]) { Key.PressFlg[6]=0; loadcell_test();}
-    else if(Key.PressFlg[7]) { Key.PressFlg[7]=0; }
-    else if(Key.PressFlg[8]) { Key.PressFlg[8]=0; Over_Weight();}
-    else if(Key.PressFlg[9]) { Key.PressFlg[9]=0; Setting_Mode();}
-    else if(Key.PressFlg[10]) { Key.PressFlg[10]=0; WeightModeSendToPad();}
-    else if(Key.PressFlg[11]) { Key.PressFlg[11]=0; }
-    else if(Key.PressFlg[12]) { Key.PressFlg[12]=0; }
-    else if(Key.PressFlg[13]) { Key.PressFlg[13]=0; }   
-    
+
+   
     if(FunData.Mode==3) Wireless_Normal_Mode();
     else if(FunData.Mode==4) Wired_Normal_Mode();
-    STATE_Lamp(FunData.Weigh_In_Motion);
-    mprintf(1, 1,"PAD%d",FunData.Pad_Sel);    
-    mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);               
-    Print_Str6x8(0xFF, 112, 7, " kg");       
-    /* USER CODE BEGIN 3 */
+
   }
   /* USER CODE END 3 */
 }

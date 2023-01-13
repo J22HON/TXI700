@@ -243,3 +243,21 @@ void Setting_Mode(void)
         Print_Str6x8(0xFF,110,7,"1/1");
     }
 }
+
+void MainKey(void)
+{
+  if(Key.PressFlg[0])      { Key.PressFlg[0]=0; }
+  else if(Key.PressFlg[1]) { Key.PressFlg[1]=0; }
+  else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; heading_edit();}  
+  else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; Memory_Input(0);}
+  else if(Key.PressFlg[4]) { Key.PressFlg[4]=0; Memory_Input(1);}
+  else if(Key.PressFlg[5]) { Key.PressFlg[5]=0; }
+  else if(Key.PressFlg[6]) { Key.PressFlg[6]=0; loadcell_test();}
+  else if(Key.PressFlg[7]) { Key.PressFlg[7]=0; }
+  else if(Key.PressFlg[8]) { Key.PressFlg[8]=0; Over_Weight();}
+  else if(Key.PressFlg[9]) { Key.PressFlg[9]=0; Setting_Mode();}
+  else if(Key.PressFlg[10]) { Key.PressFlg[10]=0; WeightModeSendToPad();}
+  else if(Key.PressFlg[11]) { Key.PressFlg[11]=0; }
+  else if(Key.PressFlg[12]) { Key.PressFlg[12]=0; }
+  else if(Key.PressFlg[13]) { Key.PressFlg[13]=0; }  
+}

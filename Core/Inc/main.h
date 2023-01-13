@@ -370,6 +370,7 @@ void STATE_Lamp(uint8_t k);
 void Hold_Lamp(uint8_t k);
 void Stable_Lamp(uint8_t k);
 void SUM_PRT_Lamp(uint8_t k);
+void MainDisplay(void);
 
 // UART
 unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb);
@@ -387,6 +388,7 @@ void tf_each_send(unsigned char pad, long rs_weight);
 // ADC
 long Battery_read(void);
 unsigned char Battery_check(void);
+void Battery(void);
 
 // AD
 void chip_select(unsigned char enable, unsigned char ad);
@@ -407,11 +409,14 @@ void check_n_step(void);
 void OnePadDisplay(void);
 void auto_time_step(void);
 void RealTimeWarningCheck(void);
+void step_time_correction(void);
+void NormalInit(void);
 
 // KEY
 void KEYPAD_Scan(void);
 void Setting_Mode(void);
 void Key_Clear(void);
+void MainKey(void);
 
 // RTC
 void TimeRead(void);

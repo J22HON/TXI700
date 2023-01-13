@@ -260,7 +260,7 @@ void SysTick_Handler(void)
   if(delay_time > 5100) delay_time = 0;
   
   s_delay++;
-  if(s_delay > 20000) s_delay=0;
+  if(s_delay > 20000) s_delay=0;  
   
   if(FunData.Weigh_In_Motion==2)
   {

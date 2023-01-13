@@ -66,7 +66,8 @@
                                  minus_flag,
                                  v_over_flag,
                                  pad_no,
-                                 in_pad;                                                     
+                                 in_pad,
+                                 normal_init;                                                     
   
   extern unsigned long          Time01Count,
                                  Time02Count,
@@ -128,13 +129,30 @@
   
   unsigned long	          digit=0,
                                   rs_value=0,
-                                  prev_value=0; 
+                                  prev_value=0,
+                                  inmotion_time=0; 
   
   long			          wim_value=0;
 
 void Wireless_Normal_Mode(void)
 {      
   unsigned char 	k=0;
+  unsigned char 	count1=0;
+  unsigned long        diff1 = 0;
+  
+  NormalInit();
+
+while(1)
+  {
+    
+KEYLABEL:  
+  
+    KEYPAD_Scan();
+    Battery_check();      
+    TimeRead();              
+    Battery();
+    MainKey();
+    MainDisplay();
   
   if(FunData.Weigh_In_Motion==2) chack_R_L_step();
   
@@ -189,34 +207,39 @@ void Wireless_Normal_Mode(void)
               else				difr_flag=0; 
               //rf_error(pad_no+1); 
               if(FunData.Wireless_Output)	stt_out('Q');
+              pad_no++;
+              if(pad_no>=FunData.Pad_Sel)pad_no=0;
           } 
-          return;
+          goto KEYLABEL;
       }
       else if((s_delay > 50) && (Sleep[pad_no] == 2 || Sleep[pad_no] == 3))
       {
           pad_no++;
-          if(pad_no>=FunData.Pad_Sel)	pad_no=0;
-          return;
+          if(pad_no>=FunData.Pad_Sel)pad_no=0;
+          goto KEYLABEL;
       }
     }
     else if(FunData.Pad_Type == TXD)
     {
+      if(Uart1Rx.Buf[10] == 0x0A) {v_rs_flag1 = 1;}
+      
       if(s_delay>50)
       { 
           rs_err++; 
 
-          if(rs_err>200) 
+          if(rs_err>50) 
           { 
               rs_err=0;
               if(FunData.Weigh_In_Motion==2)	difr_flag=1; 
               else				difr_flag=0; 
               //rf_error(pad_no+1); 
               if(FunData.Wireless_Output)	stt_out('Q');
+              pad_no++;
+              if(pad_no>=FunData.Pad_Sel)pad_no=0;
           } 
-          return;
+          goto KEYLABEL;
       }
     }    
-    if(v_rs_flag1) break;
   }
 
   if(wim_error==0)
@@ -269,7 +292,7 @@ void Wireless_Normal_Mode(void)
         HAL_Delay(40); 
         Buf_init(1); 
         
-        if(FunData.Weigh_In_Motion) return;
+        if(FunData.Weigh_In_Motion) goto KEYLABEL;
         if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)
         {
             Uart1TxBuf[0] = 0x21;
@@ -293,7 +316,7 @@ void Wireless_Normal_Mode(void)
 
         Buf_init(1);                        
         
-        return;; 
+        goto KEYLABEL;
     }
     
     if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)
@@ -308,11 +331,11 @@ void Wireless_Normal_Mode(void)
         { 
             rs_value = (unsigned long)(Uart1Rx.Buf[k]-'0');
 
-            if(rs_value>9 && (Sleep[Uart1Rx.Buf[1]] < 2 || Sleep[Uart1Rx.Buf[1]] == 4))	// ?? ??? ?? ???? ??. 
+            if(rs_value>9 && (Sleep[Uart1Rx.Buf[1]] < 2 || Sleep[Uart1Rx.Buf[1]] == 4))	
             {
                 HAL_Delay(40); 
                 Buf_init(1); 
-                return;
+                goto KEYLABEL;;
             }
 
             v_temp_long = v_temp_long + rs_value * digit;
@@ -368,27 +391,29 @@ void Wireless_Normal_Mode(void)
     
     if(minus_flag==0)
     {
-      if (v_sum_value > prev_value )  diff[0] = v_sum_value - prev_value;
-      else                            diff[0] = prev_value - v_sum_value;
+      if (v_sum_value > prev_value )  diff1 = v_sum_value - prev_value;
+      else                            diff1 = prev_value - v_sum_value;
 
-      if( diff[0] >= (FunData.Stable*20) ) count[0]=1;
+      if( diff1 >= (FunData.Stable*20) ) count1=1;
 
-      if(count[0] < 6)
+      if(count1 < 6)
       {
-         if(diff[0] < (FunData.Stable*20) ) count[0]++;
-         else { v_stable_flag=0; count[0]=1;}	
+         if(diff1 < (FunData.Stable*20) ) count1++;
+         else { v_stable_flag=0; count1=1;}	
       }
       else 
       {	
         v_stable_flag=1;
-        count[0]=1; 
+        count1=1; 
       }
 
       prev_value = v_sum_value;
+    }
       
-      
-      if(FunData.Weigh_In_Motion)
+      if(disp_sel==0)
       {
+        if(FunData.Weigh_In_Motion)
+        {
           v_stable_flag=1;
           if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)step_ch[in_pad]=Uart1Rx.Buf[2]; 
 
@@ -423,15 +448,16 @@ void Wireless_Normal_Mode(void)
               step_ch[0]=0xFF; 
               step_ch[1]=0xFF;
           }
-      }
-      else  //static
-      {
-        //if(minus_flag) 		lampdsp[7]=1;			//	MINUS
-        //else           		lampdsp[7]=0;			//	MINUS
         
-        if(!v_sum_value) 	Zero_Lamp(ON);			
-        else             	Zero_Lamp(OFF);			
-      }
+          else  //static
+          {
+            //if(minus_flag) 		lampdsp[7]=1;			//	MINUS
+            //else           		lampdsp[7]=0;			//	MINUS
+            
+            if(!v_sum_value) 	Zero_Lamp(ON);			
+            else             	Zero_Lamp(OFF);			
+          }
+        }
     }
     else OnePadDisplay();	
     
@@ -494,7 +520,8 @@ void Wireless_Normal_Mode(void)
   pad_no++;
   if(pad_no>=FunData.Pad_Sel)pad_no=0;
   RealTimeWarningCheck();
-     
+  
+  }
 }
 
 void Wired_Normal_Mode(void)
@@ -1057,4 +1084,44 @@ void RealTimeWarningCheck(void)
       excess_flag=1;
       bbik();
   }	
+}
+
+void NormalInit(void)
+{
+    unsigned char loop=0;
+    
+    difr_flag=0;
+    v_sum_value=0;
+    disp_sel=0;
+    minus_flag=0;
+    step=0; 
+    change_step=0;
+
+    com1_flag=0;											
+    com2_flag=0;
+    com3_flag=0;
+    
+    step_ch[0]=0xFF; 
+    step_ch[1]=0xFF;
+
+    if(FunData.Weigh_In_Motion) FunData.Pad_Sel=2; 
+
+    for(loop=0; loop<16; loop++) 
+    { 
+        v_e_value[loop]=0; 
+        v_batt_sig[loop]=0; 
+        v_over_sig[loop]=0;
+    }
+
+    rs_err=0;
+    
+    step_time_correction();
+}
+
+void step_time_correction(void)
+{
+  inmotion_time = FunData.Auto_Measuring*1000;
+  inmotion_time = inmotion_time-(inmotion_time*0.1);
+
+  chck_R_L_t = inmotion_time;
 }

@@ -260,6 +260,17 @@ unsigned char Battery_check(void)
   return ret;
 }
 
+void Battery(void)
+{
+  if(BatteryLevel >= 85)      Batt_Lamp(114, 0, 4); 
+  else if(BatteryLevel >= 65) Batt_Lamp(114, 0, 3);
+  else if(BatteryLevel >= 45) Batt_Lamp(114, 0, 2);
+  else if(BatteryLevel >= 25) Batt_Lamp(114, 0, 1);
+  else if(BatteryLevel >= 10)  Batt_Lamp(114, 0, 0);
+  else { Batt_Lamp(114, 0, 1); HAL_Delay(50); Batt_Lamp(114, 0, 0); HAL_Delay(50); }
+}
+
+
 /* USER CODE END 1 */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -7,6 +7,10 @@
 
  extern struct FUNCTION FunData;
 
+ extern RTC_HandleTypeDef hrtc;
+ extern RTC_DateTypeDef sDate;
+ extern RTC_TimeTypeDef sTime;
+
 void Write_Command(unsigned char Command)
 {
     unsigned char i=0;
@@ -556,3 +560,11 @@ void Print_Str6x8up(uint8_t x_pos, uint8_t y_pos, char *ch) // 8x6 Setting mode 
         x_pos += 6; 
     } 
 } 
+
+void MainDisplay(void)
+{
+  STATE_Lamp(FunData.Weigh_In_Motion);
+  mprintf(1, 1,"PAD%d",FunData.Pad_Sel);    
+  mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);               
+  Print_Str6x8(0xFF, 112, 7, " kg");
+}

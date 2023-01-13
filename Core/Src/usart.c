@@ -400,10 +400,10 @@ unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb)
   
    if(chk)
   {       
-      if(FunData.Pad_Type == TXDI_PROTOCOL) //TXDI
-      {  
+
+        
         if(UartRxBuf[GetCurrRecvCount -1] == 0x0A) {v_rs_flag1 = 1;} 
-      }      
+            
    }
   
   return 0;
