@@ -509,4 +509,3 @@ void MX_USB_DEVICE_Init(void);
 #endif /* __MAIN_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-

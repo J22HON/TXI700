@@ -299,4 +299,3 @@ unsigned int  cal_number_long(unsigned int init_value, unsigned char chat)
         else if(chat==2)        mprintf(1, 3, " SET-F  : %6d    " ,value);
     }
 }
-

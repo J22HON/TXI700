@@ -310,10 +310,25 @@
   while (1)
   {
     /* USER CODE END WHILE */
-
+    
+    KEYPAD_Scan();
+    Battery_check();      
+    TimeRead();              
+    Battery();
+    MainKey();
+    MainDisplay();
+    
+    Uart1TxBuf[0] = 0x21;
+    Uart1TxBuf[1] = 49+pad_no;
+    if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 2)!= HAL_OK) Error_Handler();
+    HAL_Delay(100);
+  
+     Buf_init(1);
+     
+    if(Uart1Rx.Buf[10] == 0x0A) {ShortBeep=1;}
    
-    if(FunData.Mode==3) Wireless_Normal_Mode();
-    else if(FunData.Mode==4) Wired_Normal_Mode();
+    //if(FunData.Mode==3) Wireless_Normal_Mode();
+    //else if(FunData.Mode==4) Wired_Normal_Mode();
 
   }
   /* USER CODE END 3 */
