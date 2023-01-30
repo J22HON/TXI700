@@ -11,6 +11,26 @@
  extern RTC_DateTypeDef sDate;
  extern RTC_TimeTypeDef sTime;
 
+ /*
+void Write_Command(unsigned char Command)
+{
+    unsigned char i=0;
+    
+    OLED_DC_LO;
+    OLED_CS_LO;       
+    for(i=0; i<8; i++)
+    {
+        OLED_SCLK_LO;
+        
+        if(Command & 0x80) OLED_SDIN_HI;
+        else               OLED_SDIN_LO;
+        OLED_SCLK_HI;
+        Command = Command << 1;
+    }
+    OLED_CS_HI;
+}*/
+
+ 
 void Write_Command(unsigned char Command)
 {
     unsigned char i=0;
@@ -28,7 +48,7 @@ void Write_Command(unsigned char Command)
     }
     OLED_CS_HI;
 }
-
+ 
 void Write_Data(unsigned char Data)
 {
     unsigned char i=0;
@@ -105,7 +125,8 @@ void OLED_Fill(unsigned char bmp_data, unsigned char select) // Fill all the bmp
 }
 
 void Oled_Gotoxy(unsigned char x_pos, unsigned char y_pos)  //x,y setting
-{                                    
+{                                  
+    x_pos=x_pos-2;
    Write_Command((0xB0 + y_pos));  //Set_Page_Start_Address_CMD
    Write_Command(((x_pos & 0x0F) | 0x00));  //Set_Lower_Column_Start_Address_CMD
    Write_Command((((x_pos & 0xF0) >> 0x04) | 0x10));   //Set_Higher_Column_Start_Address_CMD
@@ -139,6 +160,54 @@ void SBatt_Lamp(unsigned char y_pos, unsigned char Per)
     }    
 }
 
+void OLED_Initialize(void)
+{
+    OLED_ON;
+    OLED_RES_LO;
+    delay(1000);
+    OLED_RES_HI;
+    delay(1000);
+
+    Write_Command(0xae);    //set display off
+    
+    Write_Command(0x00);
+    Write_Command(0x10);
+    
+    Write_Command(0x40);    //set multiplex ratio
+    Write_Command(0x81);
+    
+    Write_Command(0x32);    //set display offset
+    Write_Command(0xa1);    //set display start line    
+    
+    Write_Command(0xa6);    
+    Write_Command(0xa8);    
+    
+    Write_Command(0x3f);    //set multiplex ratio   
+    Write_Command(0xc8);    //set com scan diretion   
+    
+    Write_Command(0xd3);
+    Write_Command(0x00);
+    
+    Write_Command(0xd5);
+    Write_Command(0xa0);
+    
+    Write_Command(0xD9);    
+    Write_Command(0xF1);      
+    
+    Write_Command(0xda);    
+    Write_Command(0x12);  
+    
+    Write_Command(0x91);    
+    Write_Command(0x3F);  
+    Write_Command(0x3F);  
+    Write_Command(0x3F);  
+    Write_Command(0x3F);  
+    Write_Command(0xaf);  
+
+    OLED_Fill(0x00, ALL); //OLED CLR
+}
+
+/*
 void OLED_Initialize(void)
 {
     OLED_ON;
@@ -189,7 +258,7 @@ void OLED_Initialize(void)
     Write_Command(0xaf);
 
     OLED_Fill(0x00, ALL); //OLED CLR
-}
+}*/
 
 void Print_Str6x8(unsigned char Invert, unsigned char x_pos, unsigned char y_pos, char *ch) // 8x6 Setting mode string display
 { 
@@ -567,4 +636,12 @@ void MainDisplay(void)
   mprintf(1, 1,"PAD%d",FunData.Pad_Sel);    
   mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);               
   Print_Str6x8(0xFF, 112, 7, " kg");
+}
+
+void delay(unsigned int i)
+{
+ while(i>0)
+ {
+ i--;
+ }
 }

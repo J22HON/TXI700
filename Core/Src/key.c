@@ -246,7 +246,7 @@ void Setting_Mode(void)
 
 void MainKey(void)
 {
-  if(Key.PressFlg[0])      { Key.PressFlg[0]=0; }
+  if(Key.PressFlg[0])      { Key.PressFlg[0]=0; scan_mode();}
   else if(Key.PressFlg[1]) { Key.PressFlg[1]=0; }
   else if(Key.PressFlg[2]) { Key.PressFlg[2]=0; heading_edit();}  
   else if(Key.PressFlg[3]) { Key.PressFlg[3]=0; Memory_Input(0);}

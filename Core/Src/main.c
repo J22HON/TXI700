@@ -152,7 +152,12 @@
                                  v_over_flag,
                                  pad_no,
                                  in_pad,
-                                 normal_init;
+                                 normal_init,
+                                 scan_year,
+                                 scan_month,
+                                 scan_date,
+                                 s_buffer[81],
+                                 scan_step;
                                                              
   
  unsigned long                  Time01Count,
@@ -183,7 +188,8 @@
                                  delay_time;    
  
   unsigned short                 zero_count[2],
-                                  s_delay;
+                                  s_delay,
+                                  scan_no;
   
   long                            BattOffSet,
                                   prev_adc1[2],
@@ -200,7 +206,9 @@
                                  
   unsigned int                   v_speed,
                                   hlpuart1RxCnt,
-                                  ErrorFlgCount;   
+                                  ErrorFlgCount,
+                                  scan_byte,
+                                  v_byte_addr;   
   
   float                          v_res_factor[2][5];  
   
@@ -245,6 +253,7 @@
   ADC_CS2_HI;
   ZIGBEE_ON;
   BLE_ON;
+  V5_ON;
   
   OLED_Initialize();
   LOGO_Print(0);
@@ -317,19 +326,18 @@
     Battery();
     MainKey();
     MainDisplay();
-    
+
     Uart1TxBuf[0] = 0x21;
     Uart1TxBuf[1] = 49+pad_no;
     if(HAL_UART_Transmit_DMA(&hlpuart1, (unsigned char*)Uart1TxBuf, 2)!= HAL_OK) Error_Handler();
     HAL_Delay(100);
   
-     Buf_init(1);
+    Buf_init(1);
      
     if(Uart1Rx.Buf[10] == 0x0A) {ShortBeep=1;}
    
     //if(FunData.Mode==3) Wireless_Normal_Mode();
     //else if(FunData.Mode==4) Wired_Normal_Mode();
-
   }
   /* USER CODE END 3 */
 }

@@ -371,6 +371,7 @@ void Hold_Lamp(uint8_t k);
 void Stable_Lamp(uint8_t k);
 void SUM_PRT_Lamp(uint8_t k);
 void MainDisplay(void);
+void delay(unsigned int i);
 
 // UART
 unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb);
@@ -421,6 +422,7 @@ void MainKey(void);
 // RTC
 void TimeRead(void);
 void rtc_set(void);
+void clock_disp(void);
 
 // CAL
 void cal_mode(void);
@@ -434,6 +436,10 @@ void loadcell_test(void);
 void Memory_Input(unsigned char pick);
 void heading_edit(void);
 void bbik(void);
+
+// SCAN
+void sacn_mode(void);
+void StepCheck(void);
 
 #define OFF             0
 #define ON              1

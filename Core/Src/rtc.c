@@ -34,6 +34,10 @@ RTC_TimeTypeDef sTime;
 
 extern struct KEY Key;
 
+extern unsigned char     scan_year,       
+                          scan_month,
+                          scan_date;
+
 extern unsigned long     RealTime,
                           RealDate;
 
@@ -298,6 +302,126 @@ void rtc_set(void)
     }
 }
 
+void clock_disp(void)
+{
+    unsigned char loop_out = 0;
+    char bound = 0;
+    unsigned int bound_count = 0;
+    
+    Clear_Screen();
+    
+    scan_year = sDate.Year;
+    scan_month = sDate.Month;
+    scan_date = sDate.Date;
+      
+    if(scan_year>99) scan_year = 0;
+    if(scan_month>12) scan_month = 1;
+    if(scan_date>31) scan_date = 1;
+
+    Print_Str6x8(0xFF,10,1," Set Date ");
+    
+    mprintf(1, 3," Date : 20%02d. %02d. %02d", scan_year, scan_month, scan_date);
+
+    while(!loop_out)
+    {
+        KEYPAD_Scan();
+        PrintArrow(68,7,0);
+        PrintArrow(80,7,1);
+        PrintArrow(94,7,2);
+        PrintArrow(56,7,4);
+        PrintArrow(44,7,3);
+        Print_Str6x8(0xFF,110,7,"1/1");        
+          
+        if( Key.PressFlg[13] )
+        {
+          Clear_Screen();
+          Key.PressFlg[13] = 0;
+          loop_out = 1;
+                                   
+          mprintf(1, 5,"Date SAVE!!");
+          HAL_Delay(1000);
+          Clear_Screen();
+        }
+                
+        else if( Key.PressFlg[12])
+        {
+          Clear_Screen();
+          Key.PressFlg[12] = 0;
+          loop_out = 1;  
+          break;
+        }
+    
+        else if ( Key.PressFlg[2] )
+        {
+          Key.PressFlg[2] = 0;
+          if(bound == 0)
+          {
+              scan_year++;
+              if(scan_year>99) scan_year = 0;
+          }
+          else if(bound == 1)
+          {
+              scan_month++;
+              if(scan_month>12) scan_month = 1;
+          }
+          else if(bound == 2)
+          {
+              scan_date++;
+              if(scan_date>31) scan_date = 1;
+          }
+        }
+    
+        else if( Key.PressFlg[4] )
+        {
+          Key.PressFlg[4] = 0;
+          bound--;
+          if(bound < 0) bound = 2;
+          mprintf(1, 3," Date : 20%02d. %02d. %02d", scan_year, scan_month, scan_date);
+        }
+
+        else if ( Key.PressFlg[6] )
+        {
+          Key.PressFlg[6] = 0;
+          bound++;
+          if(bound > 2) bound = 0;
+          mprintf(1, 3," Date : 20%02d. %02d. %02d", scan_year, scan_month, scan_date);
+        }
+    
+        else if ( Key.PressFlg[8] )
+        {
+          Key.PressFlg[8] = 0;
+          if(bound == 0)
+          {
+              scan_year--;
+              if(scan_year<0) scan_year = 99;
+          }
+          else if(bound == 1)
+          {
+              scan_month--;
+              if(scan_month<1) scan_month = 12;
+          }
+          else if(bound == 2)
+          {
+              scan_date--;
+              if(scan_date<1) scan_date = 31;
+          }
+        }
+        
+        if(bound_count <= 100)
+        {
+          mprintf(1, 3," Date : 20%02d. %02d. %02d", scan_year, scan_month, scan_date);
+          bound_count++;
+        }
+        else if(bound_count <= 300)
+        {
+          if     (bound==0) mprintf(1, 3," Date : 20  . %02d. ", scan_month, scan_date);
+          else if(bound==1) mprintf(1, 3," Date : 20%02d.   . ", scan_year, scan_date);
+          else if(bound==2) mprintf(1, 3," Date : 20%02d. %02d.   ", scan_year, scan_month);
+          bound_count++;
+        }
+        else bound_count = 0;
+    }
+}
 /* USER CODE END 1 */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
