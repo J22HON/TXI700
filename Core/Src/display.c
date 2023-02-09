@@ -10,6 +10,9 @@
  extern RTC_HandleTypeDef hrtc;
  extern RTC_DateTypeDef sDate;
  extern RTC_TimeTypeDef sTime;
+ 
+ extern unsigned char v_item[10],
+                       zero_lamp;
 
  /*
 void Write_Command(unsigned char Command)
@@ -126,7 +129,7 @@ void OLED_Fill(unsigned char bmp_data, unsigned char select) // Fill all the bmp
 
 void Oled_Gotoxy(unsigned char x_pos, unsigned char y_pos)  //x,y setting
 {                                  
-    x_pos=x_pos-2;
+   x_pos=x_pos-2;
    Write_Command((0xB0 + y_pos));  //Set_Page_Start_Address_CMD
    Write_Command(((x_pos & 0x0F) | 0x00));  //Set_Lower_Column_Start_Address_CMD
    Write_Command((((x_pos & 0xF0) >> 0x04) | 0x10));   //Set_Higher_Column_Start_Address_CMD
@@ -289,6 +292,70 @@ void Print_Str6x8(unsigned char Invert, unsigned char x_pos, unsigned char y_pos
     } 
 } 
 
+void Print_Str9x8(unsigned char Invert, unsigned char x_pos, unsigned char y_pos, char *ch) // 9x8 Setting mode string display
+{ 
+   unsigned char chr = 0; 
+   unsigned char i = 0; 
+   unsigned char j = 0;  
+ 
+    while(ch[j] != '\0') 
+    {      
+       // if(ch[j]==0x7f) ch[j] = ' ';
+        if(ch[j] > 90) chr = ch[j];           
+        else chr = (ch[j] - 32); 
+ 
+        Oled_Gotoxy(x_pos, y_pos);
+        for(i = 0; i < 9; i++)      
+        {            
+            if(Invert == y_pos) // if(y_pos == Invert) --> FONT Invert
+            {
+                Write_Data(FONT9x8[chr][i] ^ 0xFF);  
+            }
+            else
+            {
+                Write_Data(FONT9x8[chr][i]);  
+            }
+        }                
+        j++; 
+        x_pos += 9; 
+    } 
+} 
+
+void Print_Str8x16(uint8_t Invert, uint8_t x_pos, uint8_t y_pos, char* ch)
+{
+    uint8_t chr = 0,
+            i = 0,
+            j = 0;
+    
+    while(ch[j] != '\0') 
+    {
+        chr = (ch[j] - 32); 
+
+        if(x_pos > 126) 
+        {             
+            x_pos = 0; 
+            y_pos++; 
+        }
+        
+        Oled_Gotoxy(x_pos, y_pos);  
+        for(i = 0; i < 16; i++)      
+        {
+            if(Invert == y_pos)
+            {
+                Write_Data(FONT8x16[chr][i] ^ 0xFF);  
+            }
+            else
+            {
+                Write_Data(FONT8x16[chr][i]);  
+            }
+        }
+        
+        
+        j++; 
+        x_pos += 16; 
+    }
+}
+
 int mprintf(const char x_pos, const char y_pos, const char* format, ...) 
 { 
     char *buf; 
@@ -301,6 +368,23 @@ int mprintf(const char x_pos, const char y_pos, const char* format, ...)
     va_end(ap); 
     
     Print_Str6x8(0xff, x_pos, y_pos, buf); 
+    free(buf);
+
+    return i; 
+}
+
+int mprintf2(const char x_pos, const char y_pos, const char* format, ...) 
+{ 
+    char *buf; 
+    va_list ap; 
+    int i;
+    
+    buf = (char*) malloc(30); 
+    va_start(ap, format); 
+    i=vsprintf(buf,format,ap); 
+    va_end(ap); 
+    
+    Print_Str9x8(0xff, x_pos, y_pos, buf); 
     free(buf);
 
     return i; 
@@ -553,8 +637,9 @@ int square(unsigned char value, unsigned char num)
 
 void Zero_Lamp(uint8_t k)
 {
-    if(k) Print_Str6x8(0xFF, 1, 0, "ZERO"); 
-    else  Print_Str6x8(0xFF, 1, 0 ,"    ");
+  if(k==1) { Print_Str6x8(0xFF, 1, 0, "ZERO"); zero_lamp = 1 ;}
+  else if(k==2) { Print_Str6x8(0xFF, 1, 0, "TARE"); zero_lamp = 2;}
+  else if(k==0) { Print_Str6x8(0xFF, 1, 0 ,"    "); zero_lamp = 0;}
 }
 
 void ZIGBEE_Lamp(uint8_t k)
@@ -632,10 +717,25 @@ void Print_Str6x8up(uint8_t x_pos, uint8_t y_pos, char *ch) // 8x6 Setting mode 
 
 void MainDisplay(void)
 {
+  char i;
+  //for(i=0; i<10; i++)v_item[i]=48;
   STATE_Lamp(FunData.Weigh_In_Motion);
   mprintf(1, 1,"PAD%d",FunData.Pad_Sel);    
   mprintf(61, 1,"%02d.%02d %02d:%02d",sDate.Month, sDate.Date, sTime.Hours, sTime.Minutes);               
-  Print_Str6x8(0xFF, 112, 7, " kg");
+  mprintf2(112, 7, "KG");
+  
+   
+   if(v_item[0]!=0xFF){if(v_item[0]<10)mprintf2(0, 7,"%d",v_item[0]); else mprintf2(0, 7,"%c",v_item[0]);}     
+   if(v_item[1]!=0xFF){if(v_item[1]<10)mprintf2(9, 7,"%d",v_item[1]); else mprintf2(9, 7,"%c",v_item[1]);}                  
+   if(v_item[2]!=0xFF){if(v_item[2]<10)mprintf2(18, 7,"%d",v_item[2]); else mprintf2(18, 7,"%c",v_item[2]);} 
+   if(v_item[3]!=0xFF){if(v_item[3]<10)mprintf2(27, 7,"%d",v_item[3]); else mprintf2(27, 7,"%c",v_item[3]);} 
+   if(v_item[4]!=0xFF){if(v_item[4]<10)mprintf2(36, 7,"%d",v_item[4]); else mprintf2(36, 7,"%c",v_item[4]);} 
+   if(v_item[5]!=0xFF){if(v_item[5]<10)mprintf2(45, 7,"%d",v_item[5]); else mprintf2(45, 7,"%c",v_item[5]);} 
+   if(v_item[6]!=0xFF){if(v_item[6]<10)mprintf2(54, 7,"%d",v_item[6]); else mprintf2(54, 7,"%c",v_item[6]);} 
+   if(v_item[7]!=0xFF){if(v_item[7]<10)mprintf2(63, 7,"%d",v_item[7]); else mprintf2(63, 7,"%c",v_item[7]);} 
+   if(v_item[8]!=0xFF){if(v_item[8]<10)mprintf2(72, 7,"%d",v_item[8]); else mprintf2(72, 7,"%c",v_item[8]);} 
+   if(v_item[9]!=0xFF){if(v_item[9]<10)mprintf2(81, 7,"%d  ",v_item[9]); else mprintf2(81, 7,"%c  ",v_item[9]);} 
+
 }
 
 void delay(unsigned int i)

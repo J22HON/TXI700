@@ -628,7 +628,8 @@ void rf_send(long imsi_value, unsigned char error_flg) //Send to TF-600
           buf[i] = (unsigned char)(rs_value /10000); 		
           rs_value = rs_value % 10000;
           rs_value = rs_value * 10;
-  }  
+  }
+  
   Uart1TxBuf[4] = buf[5]+'0';
   Uart1TxBuf[5] = buf[4]+'0';
   Uart1TxBuf[6] = buf[3]+'0';

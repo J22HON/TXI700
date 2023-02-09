@@ -372,6 +372,9 @@ void Stable_Lamp(uint8_t k);
 void SUM_PRT_Lamp(uint8_t k);
 void MainDisplay(void);
 void delay(unsigned int i);
+int mprintf2(const char x_pos, const char y_pos, const char* format, ...); 
+void Print_Str8x16(uint8_t Invert, uint8_t x_pos, uint8_t y_pos, char* ch);
+void Print_Str9x8(unsigned char Invert, unsigned char x_pos, unsigned char y_pos, char *ch);
 
 // UART
 unsigned long Cmd_Recv_Check(DMA_CircularBuffer *cb);
@@ -412,6 +415,9 @@ void auto_time_step(void);
 void RealTimeWarningCheck(void);
 void step_time_correction(void);
 void NormalInit(void);
+void TareKeyValueSave(void);
+void TareClear(void);
+void TareValueCalc(void);
 
 // KEY
 void KEYPAD_Scan(void);

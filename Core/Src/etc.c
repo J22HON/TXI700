@@ -9,7 +9,7 @@ extern unsigned char        ShortBeep,
 
 void Memory_Input(unsigned char pick)
 {
-  unsigned char v_alpha=0, v_in=0, i, toggle=0, id_digit=0, v_current=0;
+  unsigned char v_alpha=0, v_in=0, i, toggle=0, id_digit=0, v_current=0, clear=0,consonant=0, vowel=0;
   unsigned char id_back[10];
   unsigned long delay_timer;
   
@@ -24,7 +24,7 @@ void Memory_Input(unsigned char pick)
      
      if(id_digit > 10) { bbik(); Key_Clear(); HAL_Delay(100); id_digit--;}
 
-     if(v_alpha)
+     if(v_alpha==1)
      {
 	if(Key.PressFlg[1]) 
 	{
@@ -117,7 +117,7 @@ void Memory_Input(unsigned char pick)
           if(!v_in) id_digit++;
           delay_timer=0; v_in=1; v_current=9;
 	}        
-        else if(Key.PressFlg[10]){ Key.PressFlg[10] = 0; if(v_alpha)v_alpha=0; else v_alpha = 1;   }
+        else if(Key.PressFlg[10]){ Key.PressFlg[10] = 0; if(!v_alpha)v_alpha++; else if(v_alpha==2)v_alpha = 0; else v_alpha++;   }
         else if(Key.PressFlg[11]){ Key.PressFlg[11] = 0; v_in=0; id_back[id_digit] = ' '; id_digit++; }
         else if(Key.PressFlg[12]){ Key.PressFlg[12] = 0; if(!id_digit) bbik(); else { v_in=0;  id_digit--; id_back[id_digit]=0xFF; }}
         else if(Key.PressFlg[13])
@@ -138,7 +138,7 @@ void Memory_Input(unsigned char pick)
        }
      }
      
-     else
+     else if(!v_alpha)
      {
        if(id_digit>10) { bbik(); Key_Clear(); id_digit--;} 
        delay_timer=0; v_in=0;
@@ -152,7 +152,7 @@ void Memory_Input(unsigned char pick)
        else if(Key.PressFlg[7]) { Key.PressFlg[7] = 0; v_in=0; id_back[id_digit] = 7; id_digit++; }
        else if(Key.PressFlg[8]) { Key.PressFlg[8] = 0; v_in=0; id_back[id_digit] = 8; id_digit++; }
        else if(Key.PressFlg[9]) { Key.PressFlg[9] = 0; v_in=0; id_back[id_digit] = 9; id_digit++; }      
-       else if(Key.PressFlg[10]){ Key.PressFlg[10] = 0; if(v_alpha)v_alpha=0; else v_alpha = 1;   }
+       else if(Key.PressFlg[10]){ Key.PressFlg[10] = 0; if(!v_alpha)v_alpha++; else if(v_alpha==2)v_alpha = 0; else v_alpha++;   }
        else if(Key.PressFlg[11]){ Key.PressFlg[11] = 0; v_in=0; id_back[id_digit] = ' '; id_digit++; }
        else if(Key.PressFlg[12]){ Key.PressFlg[12] = 0; if(!id_digit) bbik(); else { v_in=0;  id_digit--; id_back[id_digit]=0xFF; }}
        else if(Key.PressFlg[13])
@@ -172,28 +172,202 @@ void Memory_Input(unsigned char pick)
          break;
        }
      }
+     
+     else if(v_alpha==2)
+     {
+	if(Key.PressFlg[1]) 
+	{
+	  Key.PressFlg[1]=0;
+          
+          if(!consonant || consonant==1 || vowel !=0)
+          {
+            if(v_current!=1) { toggle=0; v_in=0; consonant=1; vowel=0;} 
+            if(!toggle) { if(v_in) id_back[id_digit-1] = 91; else id_back[id_digit] = 91; toggle=1; }
+            else        { if(v_in) id_back[id_digit-1] = 92; else id_back[id_digit] = 92; toggle=0; }
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=1;
+          }
+	}
+        
+        else if(Key.PressFlg[2]) 
+	{
+	  Key.PressFlg[2]=0;
+          
+          if(!consonant || consonant==2 || vowel !=0)
+          {
+            if(v_current!=2) { toggle=0; v_in=0; consonant=2; vowel=0;} 
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = 93; else id_back[id_digit] = 93; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = 94; else id_back[id_digit] = 94; toggle=0; }
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=2;
+          }
+	}
+        
+        else if(Key.PressFlg[3]) 
+	{
+	  Key.PressFlg[3]=0;
+          
+          if(!consonant || consonant==3 || vowel !=0)
+          {
+            if(v_current!=3) { toggle=0; v_in=0; consonant=3; vowel=0;} 
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = 95; else id_back[id_digit] = 95; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = 96; else id_back[id_digit] = 96; toggle=0; }
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=3;
+          }
+	}
+        
+        else if(Key.PressFlg[4]) 
+	{
+	  Key.PressFlg[4]=0;
+          
+          if(!consonant || consonant==4 || vowel !=0)
+          {
+            if(v_current!=4) { toggle=0; v_in=0; consonant=4; vowel=0;} 
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = 97; else id_back[id_digit] = 97; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = 98; else id_back[id_digit] = 98; toggle=0; }
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=4;
+          }
+	} 
+        
+        else if(Key.PressFlg[5]) 
+	{
+	  Key.PressFlg[5]=0;
+          
+          if(!consonant || consonant==5 || vowel !=0)
+          {
+            if(v_current!=5) { toggle=0; v_in=0; consonant=5; vowel=0;} 
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = 99; else id_back[id_digit] = 99; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = 100; else id_back[id_digit] = 100; toggle=0; }
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=5;
+          }
+	}       
+        
+        else if(Key.PressFlg[6]) 
+	{
+	  Key.PressFlg[6]=0;
+          
+          if(!consonant || consonant==6 || vowel !=0)
+          {
+            if(v_current!=6) { toggle=0; v_in=0; consonant=6; vowel=0;} 
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = 101; else id_back[id_digit] = 101; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = 102; else id_back[id_digit] = 102; toggle=0; }
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=6;
+          }
+	}                   
+        
+        else if(Key.PressFlg[7]) 
+	{
+	  Key.PressFlg[7]=0;
+          
+          if(!consonant || consonant==7 || vowel !=0)
+          {
+            if(v_current!=7) { toggle=0; v_in=0; consonant=7; vowel=0;} 
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = 103; else id_back[id_digit] = 103; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = 104; else id_back[id_digit] = 104; toggle=0; }
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=7;
+          }
+	}     
+        
+        else if(Key.PressFlg[8]) 
+	{
+	  Key.PressFlg[8]=0;
+          
+          if( (consonant && vowel!=2) || vowel == 1) 
+          {          
+            if(v_current!=8) {toggle=0; clear = 1; vowel = 1; consonant = 0;}
+            if(!clear) { if(v_in) id_back[id_digit-1] = id_back[id_digit-1]-28 ; else id_back[id_digit] = id_back[id_digit]-28; clear = 1; }
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = id_back[id_digit-1]+14 ; else id_back[id_digit] = id_back[id_digit]+14; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = id_back[id_digit-1]+14;  else id_back[id_digit] = id_back[id_digit]+14; toggle=0; clear = 0;}
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=8;
+          }
+	}
+        else if(Key.PressFlg[9]) 
+	{          
+	  Key.PressFlg[9]=0;
+          
+          if( (consonant && vowel!=1) || vowel == 2) 
+          {
+            if(v_current!=9) { toggle=0; clear = 1; vowel = 2; consonant = 0;} 
+            if(!clear) { if(v_in) id_back[id_digit-1] = id_back[id_digit-1]-56 ; else id_back[id_digit] = id_back[id_digit]-56; clear = 1; }
+            if(!toggle)        { if(v_in) id_back[id_digit-1] = id_back[id_digit-1]+42 ; else id_back[id_digit] = id_back[id_digit]+42; toggle=1; }
+            else if(toggle==1) { if(v_in) id_back[id_digit-1] = id_back[id_digit-1]+14;  else id_back[id_digit] = id_back[id_digit]+14; toggle=0; clear = 0;}
+            if(!v_in) id_digit++;
+            delay_timer=0; v_in=1; v_current=9;
+          }          
+	}        
+        else if(Key.PressFlg[10]){ Key.PressFlg[10] = 0; vowel = 0; consonant = 0; clear = 0; toggle = 0; if(!v_alpha)v_alpha++; else if(v_alpha==2)v_alpha = 0; else v_alpha++;   }
+        else if(Key.PressFlg[11]){ Key.PressFlg[11] = 0; vowel = 0; consonant = 0; clear = 0; toggle = 0; v_in=0; id_back[id_digit] = ' '; id_digit++; }
+        else if(Key.PressFlg[12]){ Key.PressFlg[12] = 0; vowel = 0; consonant = 0; clear = 0; toggle = 0; if(!id_digit) bbik(); else { v_in=0;  id_digit--; id_back[id_digit]=0xFF; }}
+        else if(Key.PressFlg[13])
+       { 
+         Key.PressFlg[13] = 0; 
+         if(!pick)
+         {
+
+           if(id_digit) { for(i=0; i<10; i++) v_car_id[i]=id_back[i]; }
+           else         { for(i=0; i<10; i++) v_car_id[i]=0xFF; }
+         }
+         else
+         {
+            for(i=0; i<id_digit+1; i++) v_item[i]=id_back[i]; 
            
+            for(i=id_digit+1; i<10; i++) v_item[i]=0xFF; 
+         }
+         Clear_Screen();
+         break;
+       }
+     }
+           
+
       if(v_in)
       {
         delay_timer++;
         if(v_alpha) mprintf(1, 6," WRITE ");
-        if(delay_timer>1000){delay_timer=0; v_in=0; toggle=0; }
+        if(delay_timer>2500)
+        {
+          delay_timer=0; 
+          v_in=0; 
+          toggle=0;                    
+          
+          if(v_alpha==2)
+          {
+            clear = 0;
+            vowel = 0;
+            v_current = 0;
+            
+            if(consonant)
+            {
+              id_back[id_digit-1] = 0;
+              id_digit--;
+              consonant = 0;
+            }
+          }
+          
+        }        
       }
+     
       else mprintf(1, 6,"       ");
-      if(v_alpha) mprintf(1, 7," ENGLISH ");
+      if(v_alpha==1) mprintf(1, 7," ENGLISH ");
       else if(!v_alpha) mprintf(1, 7," NUMBER  ");
-      
-      if(!id_digit) mprintf(1, 4,"                      ");
-      else if(id_digit==1){if(id_back[0]<10)mprintf(20, 4,"%d  ",id_back[0]); else mprintf(20, 4,"%c  ",id_back[0]);}     
-      else if(id_digit==2){if(id_back[1]<10)mprintf(26, 4,"%d  ",id_back[1]); else mprintf(26, 4,"%c  ",id_back[1]);}                  
-      else if(id_digit==3){if(id_back[2]<10)mprintf(32, 4,"%d  ",id_back[2]); else mprintf(32, 4,"%c  ",id_back[2]);} 
-      else if(id_digit==4){if(id_back[3]<10)mprintf(38, 4,"%d  ",id_back[3]); else mprintf(38, 4,"%c  ",id_back[3]);} 
-      else if(id_digit==5){if(id_back[4]<10)mprintf(44, 4,"%d  ",id_back[4]); else mprintf(44, 4,"%c  ",id_back[4]);} 
-      else if(id_digit==6){if(id_back[5]<10)mprintf(50, 4,"%d  ",id_back[5]); else mprintf(50, 4,"%c  ",id_back[5]);} 
-      else if(id_digit==7){if(id_back[6]<10)mprintf(56, 4,"%d  ",id_back[6]); else mprintf(56, 4,"%c  ",id_back[6]);} 
-      else if(id_digit==8){if(id_back[7]<10)mprintf(62, 4,"%d  ",id_back[7]); else mprintf(62, 4,"%c  ",id_back[7]);} 
-      else if(id_digit==9){if(id_back[8]<10)mprintf(68, 4,"%d  ",id_back[8]); else mprintf(68, 4,"%c  ",id_back[8]);} 
-      else if(id_digit==10){if(id_back[9]<10)mprintf(74, 4,"%d  ",id_back[9]); else mprintf(74, 4,"%c  ",id_back[9]);} 
+      else if(v_alpha==2) mprintf(1, 7," KOREAN ");
+        
+      if(!id_digit) mprintf2(1, 4,"                     ");
+      else if(id_digit==1){if(id_back[0]<10)mprintf2(20, 4,"%d  ",id_back[0]); else mprintf2(20, 4,"%c  ",id_back[0]);}     
+      else if(id_digit==2){if(id_back[1]<10)mprintf2(29, 4,"%d  ",id_back[1]); else mprintf2(29, 4,"%c  ",id_back[1]);}                  
+      else if(id_digit==3){if(id_back[2]<10)mprintf2(38, 4,"%d  ",id_back[2]); else mprintf2(38, 4,"%c  ",id_back[2]);} 
+      else if(id_digit==4){if(id_back[3]<10)mprintf2(47, 4,"%d  ",id_back[3]); else mprintf2(47, 4,"%c  ",id_back[3]);} 
+      else if(id_digit==5){if(id_back[4]<10)mprintf2(56, 4,"%d  ",id_back[4]); else mprintf2(56, 4,"%c  ",id_back[4]);} 
+      else if(id_digit==6){if(id_back[5]<10)mprintf2(65, 4,"%d  ",id_back[5]); else mprintf2(65, 4,"%c  ",id_back[5]);} 
+      else if(id_digit==7){if(id_back[6]<10)mprintf2(73, 4,"%d  ",id_back[6]); else mprintf2(73, 4,"%c  ",id_back[6]);} 
+      else if(id_digit==8){if(id_back[7]<10)mprintf2(82, 4,"%d  ",id_back[7]); else mprintf2(82, 4,"%c  ",id_back[7]);} 
+      else if(id_digit==9){if(id_back[8]<10)mprintf2(91, 4,"%d  ",id_back[8]); else mprintf2(91, 4,"%c  ",id_back[8]);} 
+      else if(id_digit==10){if(id_back[9]<10)mprintf2(100, 4,"%d  ",id_back[9]); else mprintf2(100, 4,"%c  ",id_back[9]);} 
   }
 }
 

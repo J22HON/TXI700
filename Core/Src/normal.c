@@ -67,7 +67,9 @@
                                  v_over_flag,
                                  pad_no,
                                  in_pad,
-                                 normal_init;                                                     
+                                 normal_init,
+                                 v_tare_flag,
+                                 zero_lamp;
   
   extern unsigned long          Time01Count,
                                  Time02Count,
@@ -112,7 +114,9 @@
                                   v_sum_value,
                                   v_auto_weight_stable_time_count,
                                   v_auto_print_time_count,
-                                  ulNet_Value_tmp;
+                                  ulNet_Value_tmp,
+                                  lGross_value_tmp,
+                                  lTare_value_tmp;
                                  
   extern unsigned int            v_speed,
                                   hlpuart1RxCnt,
@@ -124,7 +128,8 @@
                                   clr_m_flag=0,
                                   step_number=0,                                                                  
                                   step_point0=0,
-                                  wim_disp=0;
+                                  wim_disp=0,
+                                  tare_toggle=0;
                                   
   
   unsigned long	          digit=0,
@@ -314,10 +319,38 @@ KEYLABEL:
         HAL_Delay(700);
         disp_sel=0;                         
 
-        Buf_init(1);                        
+        Buf_init(1);      
+        
+        if( (v_tare_flag==1)/*(v_tare_en==1)*/ )
+        {
+                v_tare_flag=0;
+                lGross_value_tmp=0;
+                ulNet_Value_tmp=0;
+                lTare_value_tmp=0;
+        } 
         
         goto KEYLABEL;
     }
+    
+    if(FunData.Over_Enable==2) // Tare mode available.
+    {
+        if(Uart1Rx.Buf[3]=='T')   //TD3000F tare key
+        {
+            if(tare_toggle==0  && !zero_lamp && !minus_flag)  //zero? ???  '-'??? ???
+            {
+                TareKeyValueSave(); //break;
+                tare_toggle=1;
+            }
+            else if(tare_toggle==1)// *2???? tare??
+            {
+                TareClear();
+                Zero_Lamp(OFF);
+                tare_toggle=0;
+            }
+            else retry_message();
+        }
+    }
+    
     
     if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)
     {
@@ -417,7 +450,7 @@ KEYLABEL:
           v_stable_flag=1;
           if(FunData.Pad_Type == TXD || FunData.Pad_Type == TXDI)step_ch[in_pad]=Uart1Rx.Buf[2]; 
 
-          if( (in_pad==1)&&(step_ch[0]==step_ch[1]) ) // 2?? ? ?? 2? ?? ??? ??? ??
+          if( (in_pad==1)&&(step_ch[0]==step_ch[1]) ) 
           {
             if(FunData.Weigh_In_Motion==2) check_n_step();
                     
@@ -451,9 +484,6 @@ KEYLABEL:
         
           else  //static
           {
-            //if(minus_flag) 		lampdsp[7]=1;			//	MINUS
-            //else           		lampdsp[7]=0;			//	MINUS
-            
             if(!v_sum_value) 	Zero_Lamp(ON);			
             else             	Zero_Lamp(OFF);			
           }
@@ -520,6 +550,7 @@ KEYLABEL:
   pad_no++;
   if(pad_no>=FunData.Pad_Sel)pad_no=0;
   RealTimeWarningCheck();
+  if(v_tare_flag==1) Zero_Lamp(2);
   
   }
 }
@@ -1079,11 +1110,24 @@ void RealTimeWarningCheck(void)
 
   lRealtime_NetValue=ulNet_Value_tmp;		
 
-  if(v_over_weight<v_sum_value)
+  if((v_tare_flag==1) )
   {
-      excess_flag=1;
-      bbik();
-  }	
+    if(ulNet_Value_tmp<0) ulNet_Value_tmp *= -1;	
+
+    if(v_over_weight<v_sum_value) 
+    {
+        excess_flag=1;
+        bbik();
+    }
+  }
+  else if( ((v_tare_flag==0)))
+  {
+    if(v_over_weight<v_sum_value)
+    {
+        excess_flag=1;
+        bbik();
+    }
+  }
 }
 
 void NormalInit(void)
@@ -1124,4 +1168,59 @@ void step_time_correction(void)
   inmotion_time = inmotion_time-(inmotion_time*0.1);
 
   chck_R_L_t = inmotion_time;
+}
+
+void TareKeyValueSave(void)
+{
+    unsigned char i=0;
+
+    lTare_value_tmp=0;	
+    for(i=0; i<FunData.Pad_Sel; i++)
+    {
+            lTare_value_tmp+=v_e_value[i];
+    }
+    Zero_Lamp(2);			//	TARE
+    v_tare_flag=1;
+}
+
+void TareClear(void)
+{
+    v_tare_flag=0;
+    lGross_value_tmp=0;
+    ulNet_Value_tmp=0;
+    lTare_value_tmp=0;	
+}
+
+void TareValueCalc(void)
+{
+    if((FunData.Over_Enable==2) && (FunData.Pad_Sel>=4) && (v_tare_flag==1) )
+    {
+      if(minus_flag)
+      {
+          v_sum_value = ~v_sum_value+1;
+          if(lTare_value_tmp >= 0)
+          {
+              v_sum_value = v_sum_value - lTare_value_tmp;
+          }
+          else
+          {
+              v_sum_value = v_sum_value + lTare_value_tmp;
+          }
+      }
+      else
+      {
+          v_sum_value = v_sum_value - lTare_value_tmp;
+      }
+
+      if(v_sum_value>=0)
+      {      
+          minus_flag=0;
+      }
+      else
+      {
+          minus_flag=1;
+          v_sum_value = ~v_sum_value+1;
+      }				
+      lamp_display();
+    }
 }

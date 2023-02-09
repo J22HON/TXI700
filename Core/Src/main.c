@@ -157,7 +157,10 @@
                                  scan_month,
                                  scan_date,
                                  s_buffer[81],
-                                 scan_step;
+                                 scan_step,
+                                 i,
+                                 v_tare_flag,
+                                 zero_lamp;
                                                              
   
  unsigned long                  Time01Count,
@@ -202,7 +205,9 @@
                                   v_sum_value,
                                   v_auto_weight_stable_time_count,
                                   v_auto_print_time_count,
-                                  ulNet_Value_tmp;
+                                  ulNet_Value_tmp,
+                                  lGross_value_tmp,
+                                  lTare_value_tmp;
                                  
   unsigned int                   v_speed,
                                   hlpuart1RxCnt,
@@ -258,7 +263,7 @@
   OLED_Initialize();
   LOGO_Print(0);
   mprintf(43,6," TXI-700"); 
-  mprintf(43,7,"VER T100");
+  mprintf(43,7,"VER T100");  
   HAL_Delay(1500);
     
   HAL_RTC_WaitForSynchro(&hrtc);
@@ -282,7 +287,7 @@
   adc_initial();    
   Clear_Screen();
   LoadCell_Cheak();
-  
+  for(i=0; i<10; i++) v_item[i] = 0xFF;
   MX_LPUART1_UART_Init();
   if (HAL_UART_Receive_DMA(&hlpuart1, (unsigned char*)Uart1Rx.Buf, RXBUFFERSIZE) != HAL_OK)  //rx dma zigbee
   {
